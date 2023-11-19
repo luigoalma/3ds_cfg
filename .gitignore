@@ -1,0 +1,13 @@
+*
+
+!.gitignore
+!include
+!include/**
+!source
+!source/**
+!extra
+!extra/**
+!Makefile
+!*.rsf
+!*.md
+!LICENSE*
