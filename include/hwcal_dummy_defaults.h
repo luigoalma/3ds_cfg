@@ -175,7 +175,7 @@ static const HWCALCirclePadPart2Data_T DummyCirclePad2 = (HWCALCirclePadPart2Dat
 	.Unknown = {0}
 };
 
-static const HWCALVolumeSliderData_T DummyVolumeSlider = (HWCALVolumeSliderData_T){
+static const HWCALSlidersData_T DummySliders = (HWCALSlidersData_T){
 	.SVR2Min = 0x24,
 	.SVR2Max = 0xDB,
 	.VolumeSliderMin = 0x24,

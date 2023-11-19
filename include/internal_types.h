@@ -679,38 +679,38 @@ static_assert(offsetof(HWCALOuterCamarasPart2_T, Padding) == 14);
 static_assert(sizeofmember(HWCALOuterCamarasPart2_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALOuterCamarasPart2_T, Padding) == 2);
 
-typedef struct HWCALVolumeSliderData_T {
+typedef struct HWCALSlidersData_T {
 	s16 SVR2Min;
 	s16 SVR2Max;
 	s16 VolumeSliderMin;
 	s16 VolumeSliderMax;
-} HWCALVolumeSliderData_T;
+} HWCALSlidersData_T;
 
-typedef struct HWCALVolumeSlider_T {
-	HWCALVolumeSliderData_T Data;
+typedef struct HWCALSliders_T {
+	HWCALSlidersData_T Data;
 	u16 AgingFlag;
 	u16 Checksum; // crc16 init 0x55AA
 	u8 Padding[4];
-} HWCALVolumeSlider_T;
+} HWCALSliders_T;
 
-static_assert(sizeof(HWCALVolumeSliderData_T) == 0x8);
-static_assert(offsetof(HWCALVolumeSliderData_T, SVR2Min) == 0);
-static_assert(offsetof(HWCALVolumeSliderData_T, SVR2Max) == 2);
-static_assert(offsetof(HWCALVolumeSliderData_T, VolumeSliderMin) == 4);
-static_assert(offsetof(HWCALVolumeSliderData_T, VolumeSliderMax) == 6);
-static_assert(sizeofmember(HWCALVolumeSliderData_T, SVR2Min) == 2);
-static_assert(sizeofmember(HWCALVolumeSliderData_T, SVR2Max) == 2);
-static_assert(sizeofmember(HWCALVolumeSliderData_T, VolumeSliderMin) == 2);
-static_assert(sizeofmember(HWCALVolumeSliderData_T, VolumeSliderMax) == 2);
+static_assert(sizeof(HWCALSlidersData_T) == 0x8);
+static_assert(offsetof(HWCALSlidersData_T, SVR2Min) == 0);
+static_assert(offsetof(HWCALSlidersData_T, SVR2Max) == 2);
+static_assert(offsetof(HWCALSlidersData_T, VolumeSliderMin) == 4);
+static_assert(offsetof(HWCALSlidersData_T, VolumeSliderMax) == 6);
+static_assert(sizeofmember(HWCALSlidersData_T, SVR2Min) == 2);
+static_assert(sizeofmember(HWCALSlidersData_T, SVR2Max) == 2);
+static_assert(sizeofmember(HWCALSlidersData_T, VolumeSliderMin) == 2);
+static_assert(sizeofmember(HWCALSlidersData_T, VolumeSliderMax) == 2);
 
-static_assert(sizeof(HWCALVolumeSlider_T) == 0x10);
-static_assert(offsetof(HWCALVolumeSlider_T, Data) == 0);
-static_assert(offsetof(HWCALVolumeSlider_T, AgingFlag) == 8);
-static_assert(offsetof(HWCALVolumeSlider_T, Checksum) == 10);
-static_assert(offsetof(HWCALVolumeSlider_T, Padding) == 12);
-static_assert(sizeofmember(HWCALVolumeSlider_T, AgingFlag) == 2);
-static_assert(sizeofmember(HWCALVolumeSlider_T, Checksum) == 2);
-static_assert(sizeofmember(HWCALVolumeSlider_T, Padding) == 4);
+static_assert(sizeof(HWCALSliders_T) == 0x10);
+static_assert(offsetof(HWCALSliders_T, Data) == 0);
+static_assert(offsetof(HWCALSliders_T, AgingFlag) == 8);
+static_assert(offsetof(HWCALSliders_T, Checksum) == 10);
+static_assert(offsetof(HWCALSliders_T, Padding) == 12);
+static_assert(sizeofmember(HWCALSliders_T, AgingFlag) == 2);
+static_assert(sizeofmember(HWCALSliders_T, Checksum) == 2);
+static_assert(sizeofmember(HWCALSliders_T, Padding) == 4);
 
 typedef struct HWCALLcdModeDelayData_T {
 	u8 To2D;
@@ -886,7 +886,7 @@ typedef struct HWCALBody_T {
 	HWCALCirclePadPart2_T             CirclePad2;
 	HWCALOuterCamarasPart2_T          OuterCams2;
 	HWCALLcdPowerSave_T               LcdPowersaveLgy;
-	HWCALVolumeSlider_T               VolumeSlider;
+	HWCALSliders_T                    Sliders;
 	HWCALLcdModeDelay_T               LcdModeDelay;
 	HWCALMicrophoneEchoCancellation_T MicEchoCancel;
 	HWCALLcdPowerSaveExtra_T          LcdPowersaveExtra;

@@ -1202,7 +1202,7 @@ enum CALIndexes : u8 {
 	CAL_INDEX_CIRCLEPAD2        = 13,
 	CAL_INDEX_OUTERCAMS2        = 14,
 	CAL_INDEX_LCDPOWERSAVELGY   = 15,
-	CAL_INDEX_VOLUMESLIDER      = 16,
+	CAL_INDEX_SLIDERS           = 16,
 	CAL_INDEX_LCDMODEDELAY      = 17,
 	CAL_INDEX_MICECHOCANCEL     = 18,
 	CAL_INDEX_CSTICK            = 19,
@@ -1241,10 +1241,10 @@ bool ManagedHwcal_T::CheckAgingFlag(CALIndexes index) const {
 	u16 AgingFlag = 0;
 
 	switch(index) {
-	case CAL_INDEX_VOLUMESLIDER:
-		if(!CheckHwcalChecksum<HWCALVolumeSlider_T>(Hwcal.Body.VolumeSlider))
+	case CAL_INDEX_SLIDERS:
+		if(!CheckHwcalChecksum<HWCALSliders_T>(Hwcal.Body.Sliders))
 			break;
-		AgingFlag = Hwcal.Body.VolumeSlider.AgingFlag;
+		AgingFlag = Hwcal.Body.Sliders.AgingFlag;
 		break;
 	case CAL_INDEX_LCDMODEDELAY:
 		if(!CheckHwcalChecksum<HWCALLcdModeDelay_T>(Hwcal.Body.LcdModeDelay))
@@ -1422,8 +1422,8 @@ bool ManagedHwcal_T::ReadCalIndex(void* ptr, CALIndexes index) const {
 	case CAL_INDEX_LCDPOWERSAVELGY:
 		ret = CAL_COPY_CRCCHECK<HWCALLcdPowerSave_T>(ptr, Hwcal.Body.LcdPowersaveLgy);
 		break;
-	case CAL_INDEX_VOLUMESLIDER:
-		ret = CAL_COPY_CRCCHECK<HWCALVolumeSlider_T>(ptr, Hwcal.Body.VolumeSlider);
+	case CAL_INDEX_SLIDERS:
+		ret = CAL_COPY_CRCCHECK<HWCALSliders_T>(ptr, Hwcal.Body.Sliders);
 		break;
 	case CAL_INDEX_LCDMODEDELAY:
 		ret = CAL_COPY_CRCCHECK<HWCALLcdModeDelay_T>(ptr, Hwcal.Body.LcdModeDelay);
@@ -1505,8 +1505,8 @@ bool ManagedHwcal_T::WriteCalIndex(const void* ptr, CALIndexes index, u16 agingF
 	case CAL_INDEX_LCDPOWERSAVELGY:
 		ret = CAL_COPY_CRCMAKE<HWCALLcdPowerSave_T>(Hwcal.Body.LcdPowersaveLgy, ptr);
 		break;
-	case CAL_INDEX_VOLUMESLIDER:
-		ret = CAL_COPY_CRCMAKE_AGING<HWCALVolumeSlider_T>(Hwcal.Body.VolumeSlider, ptr, agingFlag);
+	case CAL_INDEX_SLIDERS:
+		ret = CAL_COPY_CRCMAKE_AGING<HWCALSliders_T>(Hwcal.Body.Sliders, ptr, agingFlag);
 		break;
 	case CAL_INDEX_LCDMODEDELAY:
 		ret = CAL_COPY_CRCMAKE_AGING<HWCALLcdModeDelay_T>(Hwcal.Body.LcdModeDelay, ptr, agingFlag);
@@ -1583,7 +1583,7 @@ void ManagedHwcal_T::GenerateDummy() {
 	WriteCalIndex(&DummyCirclePad2, CAL_INDEX_CIRCLEPAD2, 0);
 	WriteCalIndex(&dummies, CAL_INDEX_OUTERCAMS2, 0);
 	WriteCalIndex(&DummyLcdPowerSave, CAL_INDEX_LCDPOWERSAVELGY, 0);
-	WriteCalIndex(&DummyVolumeSlider, CAL_INDEX_VOLUMESLIDER, 0);
+	WriteCalIndex(&DummySliders, CAL_INDEX_SLIDERS, 0);
 	WriteCalIndex(&DummyLcdModeDelay, CAL_INDEX_LCDMODEDELAY, 0);
 	WriteCalIndex(&DummyMicEchoCancel, CAL_INDEX_MICECHOCANCEL, 0);
 	WriteCalIndex(&dummies, CAL_INDEX_CSTICK, 0);
