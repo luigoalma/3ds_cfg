@@ -8,6 +8,7 @@ extern "C" {
 	#include <3ds/types.h>
 }
 #include <err.h>
+#include "storage.cpp"
 
 #define LFCSSIZE 272
 

@@ -9,6 +9,7 @@ extern "C" {
 }
 #include <cfg.h>
 #include <err.h>
+#include "storage.cpp"
 
 #define UTIL_INVALID_COMBINATION MAKERESULT(RL_USAGE, RS_INVALIDARG, RM_UTIL, RD_INVALID_COMBINATION)
 

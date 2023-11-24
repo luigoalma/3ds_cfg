@@ -13,6 +13,7 @@ extern "C" {
 #include <utils/endian.h>
 #include <internal_types.h>
 #include <hwcal_dummy_defaults.h>
+#include "storage.cpp"
 
 static const FS_Path[2] HwcalPaths = {
 	{PATH_ASCII, 16, "/sys/HWCAL0.dat"},
