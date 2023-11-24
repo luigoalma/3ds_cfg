@@ -4,55 +4,6 @@
 #include <assert.h>
 #include <assert_helpers.h>
 
-#define LFCSSIZE 272
-#define SECINFOSIZE 273
-
-union ALIGN(8) LfcsData_T {
-	u8 Raw[LFCSSIZE];
-	struct {
-		u8 Signature[256];
-		union {
-			struct {
-				u8 UnkOrPad1;
-				u8 IsDevUnit;
-				u8 UnkOrPad2[6];
-				u64 Id;
-			};
-			u8 SignedData[LFCSSIZE-256];
-		};
-	};
-};
-
-static_assert(sizeof(LfcsData_T) == LFCSSIZE);
-static_assert(offsetof(LfcsData_T, Raw) == 0);
-static_assert(offsetof(LfcsData_T, Signature) == 0);
-static_assert(offsetof(LfcsData_T, SignedData) == 256);
-static_assert(offsetof(LfcsData_T, IsDevUnit) == 257);
-static_assert(offsetof(LfcsData_T, Id) == 264);
-static_assert(alignof(LfcsData_T) == 8);
-
-union SecInfoData_T {
-	u8 Raw[SECINFOSIZE];
-	struct {
-		u8 Signature[256];
-		union {
-			struct {
-				u8 Region;
-				u8 Byte0x101;
-				char Serial[15];
-			};
-			u8 SignedData[SECINFOSIZE-256];
-		};
-	};
-};
-
-static_assert(sizeof(SecInfoData_T) == SECINFOSIZE);
-static_assert(offsetof(SecInfoData_T, SignedData) == 256);
-static_assert(offsetof(SecInfoData_T, Region) == 256);
-static_assert(offsetof(SecInfoData_T, Byte0x101) == 257);
-static_assert(offsetof(SecInfoData_T, Serial) == 258);
-static_assert(alignof(SecInfoData_T) == 1);
-
 // HWCAL information mostly came from 3dbrew and gbatek
 // figured out few little things too but mostly from those places
 // so somethings may be wrong, CFG doesn't really tell much to what's what
