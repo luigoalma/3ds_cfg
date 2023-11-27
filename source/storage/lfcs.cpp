@@ -1,13 +1,11 @@
 #include <cstddef>
-extern "C" {
-	#include <3ds/errf.h>
-	#include <3ds/fs.h>
-	#include <3ds/os.h>
-	#include <3ds/ps.h>
-	#include <3ds/result.h>
-	#include <3ds/types.h>
-}
+#include <3ds/fs.h>
+#include <3ds/os.h>
+#include <3ds/ps.h>
+#include <3ds/result.h>
+#include <3ds/types.h>
 #include <err.h>
+#include <storage/lfcs.h>
 #include "storage.cpp"
 
 #define LFCSSIZE 272

@@ -1,13 +1,11 @@
 #pragma once
 #include <cstddef>
-extern "C" {
-	#include <3ds/fs.h>
-	#include <3ds/os.h>
-	#include <3ds/ps.h>
-	#include <3ds/result.h>
-	#include <3ds/svc.h>
-	#include <3ds/types.h>
-}
+#include <3ds/fs.h>
+#include <3ds/os.h>
+#include <3ds/ps.h>
+#include <3ds/result.h>
+#include <3ds/svc.h>
+#include <3ds/types.h>
 #include <utils/sha256.h>
 
 // override is a special feature to keep the SecureInfo_C consistency from Luma

@@ -6,6 +6,10 @@
 
 #include <3ds/types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /// Media types.
 typedef enum
 {
@@ -33,3 +37,7 @@ void fsExit(void);
  * @param session The handle of the FSUSER session to initialize.
  */
 Result FSUSER_Initialize(Handle session);
+
+#ifdef __cplusplus
+}
+#endif

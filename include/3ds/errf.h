@@ -7,6 +7,10 @@
 
 #include <3ds/types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /// Types of errors that can be thrown by err:f.
 typedef enum {
 	ERRF_ERRTYPE_GENERIC      = 0, ///< For generic errors. Shows miscellaneous info.
@@ -62,3 +66,7 @@ Result errfInit(void);
 void errfExit(void);
 
 void ERRF_ThrowResultNoRet(Result failure) __attribute__((noreturn, noinline));
+
+#ifdef __cplusplus
+}
+#endif

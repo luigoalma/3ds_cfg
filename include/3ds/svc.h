@@ -6,6 +6,10 @@
 
 #include "types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /// Reasons for a user break.
 typedef enum {
 	USERBREAK_PANIC         = 0, ///< Panic.
@@ -184,3 +188,7 @@ static inline void svcBreak(UserBreakType breakReason) {
 
 /// Stop point, does nothing if the process is not attached (as opposed to 'bkpt' instructions)
 #define SVC_STOP_POINT __asm__ volatile("svc 0xFF");
+
+#ifdef __cplusplus
+}
+#endif

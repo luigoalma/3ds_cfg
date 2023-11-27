@@ -1,13 +1,10 @@
 #include <cstddef>
-extern "C" {
-	#include <3ds/errf.h>
-	#include <3ds/fs.h>
-	#include <3ds/i2c.h>
-	#include <3ds/os.h>
-	#include <3ds/result.h>
-	#include <3ds/svc.h>
-	#include <3ds/types.h>
-}
+#include <3ds/fs.h>
+#include <3ds/i2c.h>
+#include <3ds/os.h>
+#include <3ds/result.h>
+#include <3ds/svc.h>
+#include <3ds/types.h>
 #include <utils/sha256.h>
 #include <utils/hmacsha256.h>
 #include <utils/endian.h>

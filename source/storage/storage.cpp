@@ -1,9 +1,7 @@
 #include <cstddef>
-extern "C" {
-	#include <3ds/fs.h>
-	#include <3ds/result.h>
-	#include <3ds/types.h>
-}
+#include <3ds/fs.h>
+#include <3ds/result.h>
+#include <3ds/types.h>
 #include "storage.cpp"
 
 #define FS_NOT_MOUNTED           MAKERESULT(RL_STATUS, RS_NOTFOUND, RM_FS, 101)

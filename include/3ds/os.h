@@ -5,6 +5,10 @@
 #pragma once
 #include "types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum PACKED RUNNING_HW {
     HW_PRODUCT = 1,
     HW_TS_BOARD = 2,
@@ -38,3 +42,7 @@ static inline RUNNING_HW osWaitRunningHw(void)
         svcSleepThread(1000000LLU);
     return osRunningHw();
 }
+
+#ifdef __cplusplus
+}
+#endif

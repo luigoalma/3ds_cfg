@@ -1,8 +1,6 @@
 #pragma once
-extern "C" {
-	#include <3ds/fs.h>
-	#include <3ds/result.h>
-}
+#include <3ds/fs.h>
+#include <3ds/result.h>
 
 namespace SystemSave {
 	extern FS_Archive NormalFSArchive;

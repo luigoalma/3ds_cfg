@@ -4,6 +4,10 @@
  */
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /// Initializes the service API.
 Result srvInit(void);
 
@@ -65,3 +69,7 @@ Result srvReceiveNotification(u32* notificationIdOut);
  * @param flags Flags to publish with. (bit 0 = only fire if not fired, bit 1 = do not report an error if there are more than 16 pending notifications)
  */
 Result srvPublishToSubscriber(u32 notificationId, u32 flags);
+
+#ifdef __cplusplus
+}
+#endif

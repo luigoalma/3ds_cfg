@@ -6,6 +6,10 @@
 
 #include <3ds/types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /// IPC buffer access rights.
 typedef enum
 {
@@ -136,3 +140,7 @@ static inline size_t IPC_Get_Desc_StaticBuffer_Size(u32 desc)
 {
 	return (size_t)((desc >> 14) & 0x3FFFF);
 }
+
+#ifdef __cplusplus
+}
+#endif

@@ -4,6 +4,10 @@
 #include <stddef.h>
 #include <assert.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
 	u8 mod[0x100];
 	union {
@@ -41,3 +45,7 @@ void psExit(void);
 Result PS_VerifyRsaSha256(u8 *hash, PS_RSA_Context *ctx, u8 *signature);
 Result PS_GetLocalFriendCodeSeed(u64* seed);
 Result PS_GenerateRandomBytes(void* out, size_t len);
+
+#ifdef __cplusplus
+}
+#endif
