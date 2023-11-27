@@ -11,8 +11,8 @@ extern "C" {
 #include <utils/sha256.h>
 #include <utils/hmacsha256.h>
 #include <utils/endian.h>
-#include <internal_types.h>
-#include <hwcal_dummy_defaults.h>
+#include "hwcal.h"
+#include "hwcal_dummy_defaults.h"
 #include "storage.cpp"
 
 static const FS_Path[2] HwcalPaths = {
