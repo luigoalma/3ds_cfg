@@ -8,9 +8,11 @@
 #include <utils/sha256.h>
 #include <utils/hmacsha256.h>
 #include <utils/endian.h>
-#include "hwcal.h"
+#include <storage/config.h>
+#include <storage/hwcal.h>
+#include "cfg.h"
+#include "storage.hpp"
 #include "hwcal_dummy_defaults.h"
-#include "storage.cpp"
 
 static const FS_Path[2] HwcalPaths = {
 	{PATH_ASCII, 16, "/sys/HWCAL0.dat"},
@@ -582,4 +584,122 @@ void ManagedHwcal_T::Load() {
 		ReadIndex(0);
 		Index = 0;
 	} else Index = 1;
+}
+
+static void Hwcal_GetCirclePadNoCheck(void* ptr) {
+	ManagedHwcal_T hwcal;
+	hwcal.Load();
+
+	CirclePadParts_T* _ptr = reinterpret_cast<CirclePadParts_T*>(ptr);
+
+	HWCALCirclePadPart1Data_T part1;
+	hwcal.ReadCalIndex(&part1, CAL_INDEX_CIRCLEPAD1);
+
+	if(hwcal.Hwcal.Header.Revision < 7) {
+		memcpy(ptr, &DefaultCirclePad, sizeof(CirclePadParts_T));
+	} else {
+		HWCALCirclePadPart2Data_T part2;
+		hwcal.ReadCalIndex(&part2, CAL_INDEX_CIRCLEPAD2);
+		_ptr->ScaleX = part2.ScaleX;
+		_ptr->ScaleY = part2.ScaleY;
+		_ptr->MaxX = part2.MaxX;
+		_ptr->MinX = part2.MinX;
+		_ptr->MaxY = part2.MaxY;
+		_ptr->MinY = part2.MinY;
+		_ptr->Type = part2.Type;
+		_ptr->Unknown[0] = part2.Unknown[0];
+		_ptr->Unknown[1] = part2.Unknown[1];
+		_ptr->Unknown[2] = part2.Unknown[2];
+	}
+
+	_ptr->CenterX = part1.CenterX;
+	_ptr->CenterY = part1.CenterY;
+}
+
+extern "C" Result Hwcal_GetCirclePad(void* ptr, size_t size) {
+	if(!ptr || size != sizeof(CirclePadParts_T)) // CFG ignored this check, we don't
+		return CFG_INVALID_SIZE;
+
+	Hwcal_GetCirclePadNoCheck(ptr);
+	return 0;
+}
+
+extern "C" Result Hwcal_ResetCirclePadCfgBlk() {
+	void* ptr;
+	Result res;
+
+	res = Cfg_System_GetBlkPtr(&ptr, 0x40001, sizeof(CirclePadParts_T));
+	if(R_SUCCEEDED(res)) {
+		Hwcal_GetCirclePadNoCheck(ptr);
+		Cfg_SaveConfig();
+	}
+
+	return res;
+}
+
+static void Hwcal_GetCStickNoCheck(void* ptr) {
+	ManagedHwcal_T hwcal;
+	hwcal.Load();
+
+	CStick_T* _ptr = reinterpret_cast<CStick_T*>(ptr);
+
+	if(hwcal.Hwcal.Header.Revision < 15) {
+		memset(ptr, 0, sizeof(CStick_T));
+	} else {
+		hwcal.ReadCalIndex(&_ptr->Data, CAL_INDEX_CSTICK);
+		memset(&_ptr->Unknown[0], 0, sizeofmember(CStick_T, Unknown));
+	}
+}
+
+extern "C" Result Hwcal_GetCStick(void* ptr, size_t size) {
+	if(!ptr || size != sizeof(CStick_T))
+		return CFG_INVALID_SIZE;
+
+	Hwcal_GetCStickNoCheck(ptr);
+	return 0;
+}
+
+extern "C" Result Hwcal_ResetCStickCfgBlk() {
+	void* ptr;
+	Result res;
+
+	res = Cfg_System_GetBlkPtr(&ptr, 0x40004, sizeof(CStick_T));
+	if(R_SUCCEEDED(res)) {
+		Hwcal_GetCStickNoCheck(ptr);
+		Cfg_SaveConfig();
+	}
+
+	return res;
+}
+
+static void Hwcal_GetQtmNoCheck(void* ptr) {
+	ManagedHwcal_T hwcal;
+	hwcal.Load();
+
+	if(hwcal.Hwcal.Header.Revision < 18) {
+		memcpy(ptr, &DefaultQtm, sizeof(HWCALQtmData_T));
+	} else {
+		hwcal.ReadCalIndex(ptr, CAL_INDEX_QTM);
+	}
+}
+
+extern "C" Result Hwcal_GetQtm(void* ptr, size_t size) {
+	if(!ptr || size != sizeof(HWCALQtmData_T))
+		return CFG_INVALID_SIZE;
+
+	Hwcal_GetQtmNoCheck(ptr);
+	return 0;
+}
+
+extern "C" Result Hwcal_ResetQtmCfgBlk() {
+	void* ptr;
+	Result res;
+
+	res = Cfg_System_GetBlkPtr(&ptr, 0x180001, sizeof(HWCALQtmData_T));
+	if(R_SUCCEEDED(res)) {
+		Hwcal_GetQtmNoCheck(ptr);
+		Cfg_SaveConfig();
+	}
+
+	return res;
 }

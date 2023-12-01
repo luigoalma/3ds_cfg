@@ -6,7 +6,7 @@
 #include <3ds/types.h>
 #include <err.h>
 #include <storage/lfcs.h>
-#include "storage.cpp"
+#include "storage.hpp"
 
 #define LFCSSIZE 272
 
@@ -185,37 +185,37 @@ ManagedLfcs_T ManagedLfcsFile = {
 	}
 };
 
-extern "C" void Cfg_Lfcs_Init() {
+extern "C" void Lfcs_Init() {
 	ManagedLfcsFile.Manager.Init();
 }
 
-extern "C" void Cfg_Lfcs_SaveToNextSlot() {
+extern "C" void Lfcs_SaveToNextSlot() {
 	ManagedLfcsFile.Manager.SaveToNextSlot();
 }
 
-extern "C" Result Cfg_Lfcs_CheckSignature() {
+extern "C" Result Lfcs_CheckSignature() {
 	return ManagedLfcsFile.Manager.CheckSignature();
 }
 
-extern "C" Result Cfg_Lfcs_GetId(u64* id) {
+extern "C" Result Lfcs_GetId(u64* id) {
 	return ManagedLfcsFile.GetLfcsId(id);
 }
 
-extern "C" Result Cfg_Lfcs_GetWholeData(void* data, size_t size) {
+extern "C" Result Lfcs_GetWholeData(void* data, size_t size) {
 	if(size < sizeof(Manager.Data)) // size checks were not originally done
 		return CFG_INVALID_SIZE;
 
 	ManagedLfcsFile.GetWholeLfcsNoChecks(data);
 }
 
-extern "C" Result Cfg_Lfcs_SetSignature(const void* sig, size_t size) {
+extern "C" Result Lfcs_SetSignature(const void* sig, size_t size) {
 	if(size < sizeof(Manager.Data.Signature)) // size checks were not originally done
 		return CFG_INVALID_SIZE;
 
 	return ManagedLfcsFile.SetSignature(sig);
 }
 
-extern "C" Result Cfg_Lfcs_SetData(const void* data, size_t size, bool reset_hardcoded) {
+extern "C" Result Lfcs_SetData(const void* data, size_t size, bool reset_hardcoded) {
 	if(reset_hardcoded)
 		return ManagedLfcsFile.ResetToHardcodedId();
 

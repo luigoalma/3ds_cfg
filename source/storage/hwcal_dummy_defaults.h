@@ -204,3 +204,28 @@ static const HWCALQtmData_T DummyQtm = (HWCALQtmData_T){
 	.HorizontalAngle = 66.4000015f, // 0x4284CCCD
 	.OptimalDistance = 301.0f, // 0x43968000
 };
+
+// why?
+static const HWCALQtmData_T DefaultQtm = (HWCALQtmData_T){
+	.DivisorAtZero = 6.5f, // 0x40D00000
+	.TranslationX = 0.0f, // 0x0
+	.TranslationY = 0.0f, // 0x0
+	.RotationZ = 0.0f, // 0x0
+	.HorizontalAngle = 70.5999985f, // 0x428D3333
+	.OptimalDistance = 301.0f, // 0x43968000
+};
+
+// defaults for combined or alternate structs
+
+static const CirclePadParts_T DefaultCirclePad = (CirclePadParts_T){
+	.ScaleX = 1.0f, // 0x3F800000
+	.ScaleY = 1.0f, // 0x3F800000
+	.CenterX = 0x800,
+	.CenterY = 0x800,
+	.MaxX = 0xD99,
+	.MinX = 0x267,
+	.MaxY = 0xD99,
+	.MinY = 0x267,
+	.Type = 0,
+	.Unknown = {0}
+};

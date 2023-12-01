@@ -1,15 +1,13 @@
 #include <cstddef>
-extern "C" {
-	#include <3ds/errf.h>
-	#include <3ds/fs.h>
-	#include <3ds/result.h>
-	#include <3ds/srv.h>
-	#include <3ds/svc.h>
-	#include <3ds/types.h>
-}
+#include <3ds/errf.h>
+#include <3ds/fs.h>
+#include <3ds/result.h>
+#include <3ds/srv.h>
+#include <3ds/svc.h>
+#include <3ds/types.h>
 #include <cfg.h>
 #include <err.h>
-#include "storage.cpp"
+#include "storage.hpp"
 
 #define UTIL_INVALID_COMBINATION MAKERESULT(RL_USAGE, RS_INVALIDARG, RM_UTIL, RD_INVALID_COMBINATION)
 

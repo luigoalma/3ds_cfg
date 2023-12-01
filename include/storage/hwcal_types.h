@@ -9,7 +9,7 @@
 // so somethings may be wrong, CFG doesn't really tell much to what's what
 // only whatever modules need to read it out of CFG
 
-typedef struct HWCALTouchData_T {
+typedef struct {
 	s16 RawX0;
 	s16 RawY0;
 	s16 PointX0;
@@ -20,7 +20,7 @@ typedef struct HWCALTouchData_T {
 	s16 PointY1;
 } HWCALTouchData_T;
 
-typedef struct HWCALTouch_T {
+typedef struct {
 	HWCALTouchData_T Data;
 	u16 Checksum; // crc16 init 0x55AA
 	u8 Padding[2];
@@ -51,13 +51,13 @@ static_assert(offsetof(HWCALTouch_T, Padding) == 18);
 static_assert(sizeofmember(HWCALTouch_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALTouch_T, Padding) == 2);
 
-typedef struct HWCALCirclePadPart1Data_T {
+typedef struct {
 	s16 CenterX;
 	s16 CenterY;
 	u8 Unk[4];
 } HWCALCirclePadPart1Data_T;
 
-typedef struct HWCALCirclePadPart1_T {
+typedef struct {
 	HWCALCirclePadPart1Data_T Data;
 	u16 Checksum; // crc16 init 0x55AA
 	u8 Padding[2];
@@ -78,12 +78,12 @@ static_assert(offsetof(HWCALCirclePadPart1_T, Padding) == 10);
 static_assert(sizeofmember(HWCALCirclePadPart1_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALCirclePadPart1_T, Padding) == 2);
 
-typedef struct HWCALScreenFlickerData_T {
+typedef struct {
 	u8 FlickerTop;
 	u8 FlickerBottom;
 } HWCALScreenFlickerData_T;
 
-typedef struct HWCALScreenFlicker_T {
+typedef struct {
 	HWCALScreenFlickerData_T Data;
 	u8 FlippedBytes[sizeof(HWCALScreenFlickerData_T)];
 } HWCALScreenFlicker_T;
@@ -99,11 +99,11 @@ static_assert(offsetof(HWCALScreenFlicker_T, Data) == 0);
 static_assert(offsetof(HWCALScreenFlicker_T, FlippedBytes) == 2);
 static_assert(sizeofmember(HWCALScreenFlicker_T, FlippedBytes) == 2);
 
-typedef struct HWCALRtcCompensationData_T {
+typedef struct {
 	u8 CompensationValue;
 } HWCALRtcCompensationData_T;
 
-typedef struct HWCALRtcCompensation_T {
+typedef struct {
 	HWCALRtcCompensationData_T Data;
 	u8 FlippedBytes[sizeof(HWCALRtcCompensationData_T)];
 	u8 Padding[2];
@@ -120,11 +120,11 @@ static_assert(offsetof(HWCALRtcCompensation_T, Padding) == 2);
 static_assert(sizeofmember(HWCALRtcCompensation_T, FlippedBytes) == 1);
 static_assert(sizeofmember(HWCALRtcCompensation_T, Padding) == 2);
 
-typedef struct HWCALRtcCorrectionData_T {
+typedef struct {
 	u8 CorrectionValue;
 } HWCALRtcCorrectionData_T;
 
-typedef struct HWCALRtcCorrection_T {
+typedef struct {
 	HWCALRtcCorrectionData_T Data;
 	u8 FlippedBytes[sizeof(HWCALRtcCorrectionData_T)];
 	u8 Padding[6];
@@ -164,7 +164,7 @@ typedef struct PACKED HWCALOuterCamarasPart1Data_T {
 	s16 CcmPosition;
 } HWCALOuterCamarasPart1Data_T;
 
-typedef struct HWCALOuterCamarasPart1_T {
+typedef struct {
 	HWCALOuterCamarasPart1Data_T Data;
 	u16 Checksum; // crc16 init 0x55AA
 } HWCALOuterCamarasPart1_T;
@@ -216,7 +216,7 @@ static_assert(offsetof(HWCALOuterCamarasPart1_T, Data) == 0);
 static_assert(offsetof(HWCALOuterCamarasPart1_T, Checksum) == 138);
 static_assert(sizeofmember(HWCALOuterCamarasPart1_T, Checksum) == 2);
 
-typedef struct HWCALGyroscopeData_T {
+typedef struct {
 	s16 ZeroX;
 	s16 PlusX;
 	s16 MinusX;
@@ -228,7 +228,7 @@ typedef struct HWCALGyroscopeData_T {
 	s16 MinusZ;
 } HWCALGyroscopeData_T;
 
-typedef struct HWCALGyroscope_T {
+typedef struct {
 	HWCALGyroscopeData_T Data;
 	u16 Checksum; // crc16 init 0x55AA
 } HWCALGyroscope_T;
@@ -258,7 +258,7 @@ static_assert(offsetof(HWCALGyroscope_T, Data) == 0);
 static_assert(offsetof(HWCALGyroscope_T, Checksum) == 18);
 static_assert(sizeofmember(HWCALGyroscope_T, Checksum) == 2);
 
-typedef struct HWCALAccelerometerData_T {
+typedef struct {
 	s16 OffsetX;
 	s16 ScaleX;
 	s16 OffsetY;
@@ -267,7 +267,7 @@ typedef struct HWCALAccelerometerData_T {
 	s16 ScaleZ;
 } HWCALAccelerometerData_T;
 
-typedef struct HWCALAccelerometer_T {
+typedef struct {
 	HWCALAccelerometerData_T Data;
 	u16 Checksum; // crc16 init 0x55AA
 	u8 Padding[2];
@@ -294,7 +294,7 @@ static_assert(offsetof(HWCALAccelerometer_T, Padding) == 14);
 static_assert(sizeofmember(HWCALAccelerometer_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALAccelerometer_T, Padding) == 2);
 
-typedef struct HWCALCodecData_T {
+typedef struct {
 	u8 DriverGainHP;
 	u8 DriverGainSP;
 	u8 AnalogVolumeHP;
@@ -322,7 +322,7 @@ typedef struct HWCALCodecData_T {
 	u8 Reserved2;
 } HWCALCodecData_T;
 
-typedef struct HWCALCodec_T {
+typedef struct {
 	HWCALCodecData_T Data;
 	u16 Checksum; // crc16 init 0x55AA
 	u8 Padding[2];
@@ -387,12 +387,12 @@ static_assert(offsetof(HWCALCodec_T, Padding) == 310);
 static_assert(sizeofmember(HWCALCodec_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALCodec_T, Padding) == 2);
 
-typedef struct HWCALPitData_T {
+typedef struct {
 	u16 VisibleFactor;
 	u16 IRFactor;
 } HWCALPitData_T;
 
-typedef struct HWCALPit_T {
+typedef struct {
 	HWCALPitData_T Data;
 	u16 AgingFlag;
 	u16 Checksum; // crc16 init 0x55AA
@@ -411,12 +411,12 @@ static_assert(offsetof(HWCALPit_T, Checksum) == 6);
 static_assert(sizeofmember(HWCALPit_T, AgingFlag) == 2);
 static_assert(sizeofmember(HWCALPit_T, Checksum) == 2);
 
-typedef struct HWCALSound3DFilterData_T {
+typedef struct {
 	u16 SpecialFilter[256];
 	u32 IIRSurroundFilter[5];
 } HWCALSound3DFilterData_T;
 
-typedef struct HWCALSound3DFilter_T {
+typedef struct {
 	HWCALSound3DFilterData_T Data;
 	u16 Checksum; // crc16 init 0x55AA
 	u8 Padding[10];
@@ -435,7 +435,7 @@ static_assert(offsetof(HWCALSound3DFilter_T, Padding) == 534);
 static_assert(sizeofmember(HWCALSound3DFilter_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALSound3DFilter_T, Padding) == 10);
 
-typedef struct HWCALLcdPowerSaveData_T {
+typedef struct {
 	u32 DitherPattern;
 	s16 StartX;
 	s16 StartY;
@@ -453,7 +453,7 @@ typedef struct HWCALLcdPowerSaveData_T {
 	u8 Reserved[2];
 } HWCALLcdPowerSaveData_T;
 
-typedef struct HWCALLcdPowerSave_T {
+typedef struct {
 	HWCALLcdPowerSaveData_T Data;
 	u16 Checksum; // crc16 init 0x55AA
 	u8 Padding[14];
@@ -498,7 +498,7 @@ static_assert(offsetof(HWCALLcdPowerSave_T, Padding) == 34);
 static_assert(sizeofmember(HWCALLcdPowerSave_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALLcdPowerSave_T, Padding) == 14);
 
-typedef struct HWCALLcdStereoscopicData_T {
+typedef struct {
 	float PupillaryDistanceInMm;
 	float DistanceEyesAndUpperScreenInMm;
 	float ScreenWidthInMm;
@@ -506,7 +506,7 @@ typedef struct HWCALLcdStereoscopicData_T {
 	float Unknown[4];
 } HWCALLcdStereoscopicData_T;
 
-typedef struct HWCALLcdStereoscopic_T {
+typedef struct {
 	HWCALLcdStereoscopicData_T Data;
 	u16 Checksum; // crc16 init 0x55AA
 	u8 Padding[14];
@@ -531,7 +531,7 @@ static_assert(offsetof(HWCALLcdStereoscopic_T, Padding) == 34);
 static_assert(sizeofmember(HWCALLcdStereoscopic_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALLcdStereoscopic_T, Padding) == 14);
 
-typedef struct HWCALBacklightPwmData_T {
+typedef struct {
 	float Coefficients[3][3];
 	u8 NumLevels;
 	u8 Unknown;
@@ -540,7 +540,7 @@ typedef struct HWCALBacklightPwmData_T {
 	u16 MinimumBrightnessHw;
 } HWCALBacklightPwmData_T;
 
-typedef struct HWCALBacklightPwm_T {
+typedef struct {
 	HWCALBacklightPwmData_T Data;
 	u16 Checksum; // crc16 init 0x55AA
 	u8 Padding[6];
@@ -567,7 +567,7 @@ static_assert(offsetof(HWCALBacklightPwm_T, Padding) == 58);
 static_assert(sizeofmember(HWCALBacklightPwm_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALBacklightPwm_T, Padding) == 6);
 
-typedef struct HWCALCirclePadPart2Data_T {
+typedef struct {
 	float ScaleX;
 	float ScaleY;
 	s16 MaxX;
@@ -575,10 +575,10 @@ typedef struct HWCALCirclePadPart2Data_T {
 	s16 MaxY;
 	s16 MinY;
 	s16 Type;
-	u8 Unknown[6];
+	u16 Unknown[3];
 } HWCALCirclePadPart2Data_T;
 
-typedef struct HWCALCirclePadPart2_T {
+typedef struct {
 	HWCALCirclePadPart2Data_T Data;
 	u16 Checksum; // crc16 init 0x55AA
 	u8 Padding[6];
@@ -609,11 +609,11 @@ static_assert(offsetof(HWCALCirclePadPart2_T, Padding) == 26);
 static_assert(sizeofmember(HWCALCirclePadPart2_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALCirclePadPart2_T, Padding) == 6);
 
-typedef struct HWCALOuterCamarasPart2Data_T {
+typedef struct {
 	u16 Unknown[6];
 } HWCALOuterCamarasPart2Data_T;
 
-typedef struct HWCALOuterCamarasPart2_T {
+typedef struct {
 	HWCALOuterCamarasPart2Data_T Data;
 	u16 Checksum; // crc16 init 0x55AA
 	u8 Padding[2];
@@ -630,14 +630,14 @@ static_assert(offsetof(HWCALOuterCamarasPart2_T, Padding) == 14);
 static_assert(sizeofmember(HWCALOuterCamarasPart2_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALOuterCamarasPart2_T, Padding) == 2);
 
-typedef struct HWCALSlidersData_T {
+typedef struct {
 	s16 SVR2Min;
 	s16 SVR2Max;
 	s16 VolumeSliderMin;
 	s16 VolumeSliderMax;
 } HWCALSlidersData_T;
 
-typedef struct HWCALSliders_T {
+typedef struct {
 	HWCALSlidersData_T Data;
 	u16 AgingFlag;
 	u16 Checksum; // crc16 init 0x55AA
@@ -663,12 +663,12 @@ static_assert(sizeofmember(HWCALSliders_T, AgingFlag) == 2);
 static_assert(sizeofmember(HWCALSliders_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALSliders_T, Padding) == 4);
 
-typedef struct HWCALLcdModeDelayData_T {
+typedef struct {
 	u8 To2D;
 	u8 To3D;
 } HWCALLcdModeDelayData_T;
 
-typedef struct HWCALLcdModeDelay_T {
+typedef struct {
 	HWCALLcdModeDelayData_T Data;
 	u16 AgingFlag;
 	u16 Checksum; // crc16 init 0x55AA
@@ -690,11 +690,11 @@ static_assert(sizeofmember(HWCALLcdModeDelay_T, AgingFlag) == 2);
 static_assert(sizeofmember(HWCALLcdModeDelay_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALLcdModeDelay_T, Padding) == 10);
 
-typedef struct HWCALMicrophoneEchoCancellationData_T {
+typedef struct {
 	u8 Unknown[8];
 } HWCALMicrophoneEchoCancellationData_T;
 
-typedef struct HWCALMicrophoneEchoCancellation_T {
+typedef struct {
 	HWCALMicrophoneEchoCancellationData_T Data;
 	u16 AgingFlag;
 	u16 Checksum; // crc16 init 0x55AA
@@ -714,7 +714,7 @@ static_assert(sizeofmember(HWCALMicrophoneEchoCancellation_T, AgingFlag) == 2);
 static_assert(sizeofmember(HWCALMicrophoneEchoCancellation_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALMicrophoneEchoCancellation_T, Padding) == 4);
 
-typedef struct HWCALLcdPowerSaveExtraData_T {
+typedef struct {
 	u8 MaxInertia;
 	u8 Pad;
 	u16 PWM_CNT_EX;
@@ -723,7 +723,7 @@ typedef struct HWCALLcdPowerSaveExtraData_T {
 	u32 Adjust[64];
 } HWCALLcdPowerSaveExtraData_T;
 
-typedef struct HWCALLcdPowerSaveExtra_T {
+typedef struct {
 	HWCALLcdPowerSaveExtraData_T Data;
 	u16 AgingFlag;
 	u16 Checksum; // crc16 init 0x55AA
@@ -750,13 +750,13 @@ static_assert(offsetof(HWCALLcdPowerSaveExtra_T, Checksum) == 270);
 static_assert(sizeofmember(HWCALLcdPowerSaveExtra_T, AgingFlag) == 2);
 static_assert(sizeofmember(HWCALLcdPowerSaveExtra_T, Checksum) == 2);
 
-typedef struct HWCALCStickData_T {
+typedef struct {
 	u8 ThinningCountX;
 	u8 ThinningCountY;
 	u8 Reserved[6];
 } HWCALCStickData_T;
 
-typedef struct HWCALCStick_T {
+typedef struct {
 	HWCALCStickData_T Data;
 	u16 AgingFlag;
 	u16 Checksum; // crc16 init 0x55AA
@@ -780,7 +780,7 @@ static_assert(sizeofmember(HWCALCStick_T, AgingFlag) == 2);
 static_assert(sizeofmember(HWCALCStick_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALCStick_T, Padding) == 4);
 
-typedef struct HWCALQtmData_T {
+typedef struct {
 	float DivisorAtZero;
 	float TranslationX;
 	float TranslationY;
@@ -789,7 +789,7 @@ typedef struct HWCALQtmData_T {
 	float OptimalDistance;
 } HWCALQtmData_T;
 
-typedef struct HWCALQtm_T {
+typedef struct {
 	HWCALQtmData_T Data;
 	u16 AgingFlag;
 	u16 Checksum; // crc16 init 0x55AA
@@ -819,7 +819,7 @@ static_assert(sizeofmember(HWCALQtm_T, AgingFlag) == 2);
 static_assert(sizeofmember(HWCALQtm_T, Checksum) == 2);
 static_assert(sizeofmember(HWCALQtm_T, Padding) == 4);
 
-typedef struct HWCALBody_T {
+typedef struct {
 	HWCALTouch_T                      Touch;
 	HWCALCirclePadPart1_T             CirclePad1;
 	HWCALScreenFlicker_T              ScreenFlicker;
@@ -873,7 +873,7 @@ static_assert(offsetof(HWCALBody_T, Qtm) == 1680);
 static_assert(offsetof(HWCALBody_T, Unused) == 1712);
 static_assert(sizeofmember(HWCALBody_T, Unused) == 288);
 
-typedef struct HWCALHeader_T {
+typedef struct {
 	u32 Magic;
 	u32 Version;
 	u32 DataSize;
@@ -904,7 +904,7 @@ static_assert(sizeofmember(HWCALHeader_T, AgingSuccessBitmask) == 2);
 static_assert(sizeofmember(HWCALHeader_T, Sha256) == 32);
 static_assert(sizeofmember(HWCALHeader_T, HmacSha256) == 32);
 
-typedef struct HWCAL_T {
+typedef struct {
 	HWCALHeader_T Header;
 	u8 Padding[0x1D0];
 	HWCALBody_T Body;
@@ -915,3 +915,51 @@ static_assert(offsetof(HWCAL_T, Header) == 0);
 static_assert(offsetof(HWCAL_T, Padding) == 48);
 static_assert(offsetof(HWCAL_T, Body) == 512);
 static_assert(sizeofmember(HWCAL_T, Padding) == 464);
+
+// Different kinds of types not directly inside HWCAL in format
+// structures that cfg appears to do for cfg blks and IPCs with data from HWCAL
+
+typedef struct {
+	float ScaleX;
+	float ScaleY;
+	s16 CenterX;
+	s16 CenterY;
+	s16 MaxX;
+	s16 MinX;
+	s16 MaxY;
+	s16 MinY;
+	s16 Type;
+	u16 Unknown[3];
+} CirclePadParts_T;
+
+static_assert(sizeof(CirclePadParts_T) == 0x1C);
+static_assert(offsetof(CirclePadParts_T, ScaleX) == 0);
+static_assert(offsetof(CirclePadParts_T, ScaleY) == 4);
+static_assert(offsetof(CirclePadParts_T, CenterX) == 8);
+static_assert(offsetof(CirclePadParts_T, CenterY) == 10);
+static_assert(offsetof(CirclePadParts_T, MaxX) == 12);
+static_assert(offsetof(CirclePadParts_T, MinX) == 14);
+static_assert(offsetof(CirclePadParts_T, MaxY) == 16);
+static_assert(offsetof(CirclePadParts_T, MinY) == 18);
+static_assert(offsetof(CirclePadParts_T, Type) == 20);
+static_assert(offsetof(CirclePadParts_T, Unknown) == 22);
+static_assert(sizeofmember(CirclePadParts_T, ScaleX) == 4);
+static_assert(sizeofmember(CirclePadParts_T, ScaleY) == 4);
+static_assert(sizeofmember(CirclePadParts_T, CenterX) == 2);
+static_assert(sizeofmember(CirclePadParts_T, CenterY) == 2);
+static_assert(sizeofmember(CirclePadParts_T, MaxX) == 2);
+static_assert(sizeofmember(CirclePadParts_T, MinX) == 2);
+static_assert(sizeofmember(CirclePadParts_T, MaxY) == 2);
+static_assert(sizeofmember(CirclePadParts_T, MinY) == 2);
+static_assert(sizeofmember(CirclePadParts_T, Type) == 2);
+static_assert(sizeofmember(CirclePadParts_T, Unknown) == 6);
+
+typedef struct {
+	HWCALCStickData_T Data;
+	u8 Unknown[20];
+} CStick_T;
+
+static_assert(sizeof(CStick_T) == 0x1C);
+static_assert(offsetof(CStick_T, Data) == 0);
+static_assert(offsetof(CStick_T, Unknown) == 8);
+static_assert(sizeofmember(CStick_T, Unknown) == 20);

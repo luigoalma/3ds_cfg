@@ -42,7 +42,7 @@ void ERRF_ThrowResultNoRet(Result failure)
 	// manually inlined ERRF_Throw and adjusted to make smaller code output
 	uint32_t *cmdbuf = getThreadCommandBuffer();
 	cmdbuf[0] = IPC_MakeHeader(0x1, 32, 0);
-	_memset32_aligned(&cmdbuf[1], 0, sizeof(ERRF_FatalErrInfo));
+	memset(&cmdbuf[1], 0, sizeof(ERRF_FatalErrInfo));
 	ERRF_FatalErrInfo* error = (ERRF_FatalErrInfo*)&cmdbuf[1];
 	error->type = ERRF_ERRTYPE_GENERIC;
 	error->pcAddr = (u32)__builtin_extract_return_addr(__builtin_return_address(0));

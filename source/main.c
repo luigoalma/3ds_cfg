@@ -10,6 +10,10 @@
 #include <memops.h>
 #include <utils/sha256.h>
 #include <utils/endian.h>
+#include <storage/config.h>
+#include <storage/hwcal.h>
+#include <storage/lfcs.h>
+#include <storage/secinfo.h>
 
 #define OS_REMOTE_SESSION_CLOSED MAKERESULT(RL_STATUS,    RS_CANCELED, RM_OS, 26)
 #define OS_INVALID_HEADER        MAKERESULT(RL_PERMANENT, RS_WRONGARG, RM_OS, 47)
@@ -96,7 +100,7 @@ static Result Cfg_IsCoppacsSupported(bool* support) {
 	Result res;
 
 	res = Cfg_System_ReadBlk(&data[0], 0xB0000, 4);
-	if(R_SUCCEEDED(res)) res = Cfg_SecInfo_GetRegionByte(&region);
+	if(R_SUCCEEDED(res)) res = SecInfo_GetRegionByte(&region);
 	if(R_SUCCEEDED(res)) {
 		*support = (region == CFG_REGION_USA) && ((data[3] == CFG_COUNTRY_US) || (data[3] == CFG_COUNTRY_CA));
 		res = 0;
@@ -119,7 +123,7 @@ static Result Get_GetSystemModel(CFG_SystemModel* model) {
 	CFG_SystemModel _model = (CFG_SystemModel)data[0];
 
 	if(_model == CFG_MODEL_2DS) {
-		if(R_SUCCEEDED(Cfg_SecInfo_GetSerialNumber(serial, sizeof(serial)))) {
+		if(R_SUCCEEDED(SecInfo_GetSerialNumber(serial, sizeof(serial)))) {
 			if(serial[0] != 'A' && serial != 'P') {
 				*model = CFG_MODEL_3DS;
 				return CFG_BAD_MODEL_CHECK;
@@ -182,7 +186,7 @@ static void CFG_Common_IPCSession(int service_index) {
 	case 0x816: // cfg:i
 		{
 			u8 region = 0;
-			cmdbuf[1] = Cfg_SecInfo_GetRegionByte(&region);
+			cmdbuf[1] = SecInfo_GetRegionByte(&region);
 			cmdbuf[0] = IPC_MakeHeader(cmdid, 2, 0);
 			cmdbuf[2] = region;
 		}
@@ -293,7 +297,7 @@ static void CFG_Common_IPCSession(int service_index) {
 			void* ptr = (void*)cmdbuf[3];
 			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[2]);
 
-			cmdbuf[1] = Cfg_Lfcs_GetWholeData(ptr, size);
+			cmdbuf[1] = Lfcs_GetWholeData(ptr, size);
 			cmdbuf[0] = IPC_MakeHeader(cmdid, 1, 2);
 			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_W);
 			cmdbuf[3] = (u32)ptr;
@@ -303,7 +307,7 @@ static void CFG_Common_IPCSession(int service_index) {
 	case 0x810: // cfg:i
 		{
 			u64 id;
-			cmdbuf[1] = Cfg_Lfcs_GetId(&id);
+			cmdbuf[1] = Lfcs_GetId(&id);
 			cmdbuf[0] = IPC_MakeHeader(cmdid, 3, 0);
 			cmdbuf[2] = id & 0xFFFFFFFF;
 			cmdbuf[3] = id >> 32;
@@ -314,7 +318,7 @@ static void CFG_Common_IPCSession(int service_index) {
 	case 0x817: // cfg:i
 		{
 			u8 unk = 0;
-			cmdbuf[1] = Cfg_SecInfo_GetByte0x101(&unk);
+			cmdbuf[1] = SecInfo_GetByte0x101(&unk);
 			cmdbuf[0] = IPC_MakeHeader(cmdid, 2, 0);
 			cmdbuf[2] = region;
 		}
@@ -328,7 +332,7 @@ static void CFG_Common_IPCSession(int service_index) {
 			void* ptr = (void*)cmdbuf[3];
 			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[2]);
 
-			cmdbuf[1] = Cfg_SecInfo_GetSerialNumber(ptr, size);
+			cmdbuf[1] = SecInfo_GetSerialNumber(ptr, size);
 			cmdbuf[0] = IPC_MakeHeader(cmdid, 1, 2);
 			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_W);
 			cmdbuf[3] = (u32)ptr;
@@ -421,9 +425,8 @@ static void CFG_Common_IPCSession(int service_index) {
 		}
 		break;
 	case 0x80A:
-		{
-
-		}
+		cmdbuf[1] = Hwcal_ResetCirclePadCfgBlk();
+		cmdbuf[0] = IPC_MakeHeader(0x80A, 1, 0);
 		break;
 	case 0x80B:
 		if (!IPC_CompareHeader(cmdbuf[0], 0x80B, 2, 2) || !IPC_Is_Desc_Buffer(cmdbuf[3], IPC_BUFFER_R)) {
@@ -434,7 +437,7 @@ static void CFG_Common_IPCSession(int service_index) {
 			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[3]);
 			bool reset_hardcoded = (cmdbuf[2] & 0xFF) ? true : false;
 
-			cmdbuf[1] = Cfg_Lfcs_SetData(ptr, size, reset_hardcoded);
+			cmdbuf[1] = Lfcs_SetData(ptr, size, reset_hardcoded);
 			cmdbuf[0] = IPC_MakeHeader(0x80B, 1, 2);
 			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_R);
 			cmdbuf[3] = (u32)ptr;
@@ -448,19 +451,19 @@ static void CFG_Common_IPCSession(int service_index) {
 			void* ptr = (void*)cmdbuf[3];
 			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[2]);
 
-			cmdbuf[1] = Cfg_Lfcs_SetSignature(ptr, size);
+			cmdbuf[1] = Lfcs_SetSignature(ptr, size);
 			cmdbuf[0] = IPC_MakeHeader(0x80C, 1, 2);
 			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_R);
 			cmdbuf[3] = (u32)ptr;
 		}
 		break;
 	case 0x80D:
-		Cfg_Lfcs_SaveToNextSlot();
+		Lfcs_SaveToNextSlot();
 		cmdbuf[0] = IPC_MakeHeader(0x80D, 1, 0);
 		cmdbuf[1] = 0;
 		break;
 	case 0x80E:
-		cmdbuf[1] = Cfg_Lfcs_CheckSignature()
+		cmdbuf[1] = Lfcs_CheckSignature()
 		cmdbuf[0] = IPC_MakeHeader(0x80E, 1, 0);
 		break;
 	// case 0x80F at case 0x404
@@ -476,7 +479,7 @@ static void CFG_Common_IPCSession(int service_index) {
 			const void* data = (const void*)cmdbuf[4];
 			size_t datasize = IPC_Get_Desc_Buffer_Size(cmdbuf[3]);
 
-			cmdbuf[1] = Cfg_SecInfo_SetWholeSecInfo(sig, sigsize, data, datasize);
+			cmdbuf[1] = SecInfo_SetWholeSecInfo(sig, sigsize, data, datasize);
 			cmdbuf[0] = IPC_MakeHeader(0x811, 1, 4);
 			cmdbuf[2] = IPC_Desc_Buffer(datasize, IPC_BUFFER_R);
 			cmdbuf[3] = (u32)data;
@@ -485,12 +488,12 @@ static void CFG_Common_IPCSession(int service_index) {
 		}
 		break;
 	case 0x812:
-		Cfg_SecInfo_SaveToNextSlot();
+		SecInfo_SaveToNextSlot();
 		cmdbuf[0] = IPC_MakeHeader(0x812, 1, 0);
 		cmdbuf[1] = 0;
 		break;
 	case 0x813:
-		cmdbuf[1] = Cfg_SecInfo_CheckSignature();
+		cmdbuf[1] = SecInfo_CheckSignature();
 		cmdbuf[0] = IPC_MakeHeader(0x813, 1, 0);
 		break;
 	case 0x814:
@@ -501,7 +504,7 @@ static void CFG_Common_IPCSession(int service_index) {
 			void* ptr = (void*)cmdbuf[3];
 			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[2]);
 
-			cmdbuf[1] = Cfg_SecInfo_GetData(ptr, size);
+			cmdbuf[1] = SecInfo_GetData(ptr, size);
 			cmdbuf[0] = IPC_MakeHeader(0x814, 1, 2);
 			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_W);
 			cmdbuf[3] = (u32)ptr;
@@ -515,7 +518,7 @@ static void CFG_Common_IPCSession(int service_index) {
 			void* ptr = (void*)cmdbuf[3];
 			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[2]);
 
-			cmdbuf[1] = Cfg_SecInfo_GetSignature(ptr, size);
+			cmdbuf[1] = SecInfo_GetSignature(ptr, size);
 			cmdbuf[0] = IPC_MakeHeader(0x815, 1, 2);
 			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_W);
 			cmdbuf[3] = (u32)ptr;
@@ -531,29 +534,54 @@ static void CFG_Common_IPCSession(int service_index) {
 		}
 		break;
 	case 0x81B:
-		{
+		if (!IPC_CompareHeader(cmdbuf[0], 0x81B, 1, 2) || !IPC_Is_Desc_Buffer(cmdbuf[2], IPC_BUFFER_W)) {
+			cmdbuf[0] = IPC_MakeHeader(0x0, 1, 0);
+			cmdbuf[1] = OS_INVALID_IPC_PARAMATER;
+		} else {
+			void* ptr = (void*)cmdbuf[3];
+			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[2]);
 
+			cmdbuf[1] = Hwcal_GetCirclePad(ptr, size);
+			cmdbuf[0] = IPC_MakeHeader(0x81B, 1, 2);
+			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_W);
+			cmdbuf[3] = (u32)ptr;
 		}
 		break;
 	// case 0x81C at case 0x40B
 	case 0x81D:
-		{
-
-		}
+		cmdbuf[1] = Hwcal_ResetCStickCfgBlk();
+		cmdbuf[0] = IPC_MakeHeader(0x81D, 1, 0);
 		break;
 	case 0x81E:
-		{
+		if (!IPC_CompareHeader(cmdbuf[0], 0x81E, 1, 2) || !IPC_Is_Desc_Buffer(cmdbuf[2], IPC_BUFFER_W)) {
+			cmdbuf[0] = IPC_MakeHeader(0x0, 1, 0);
+			cmdbuf[1] = OS_INVALID_IPC_PARAMATER;
+		} else {
+			void* ptr = (void*)cmdbuf[3];
+			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[2]);
 
+			cmdbuf[1] = Hwcal_GetCStick(ptr, size);
+			cmdbuf[0] = IPC_MakeHeader(0x81E, 1, 2);
+			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_W);
+			cmdbuf[3] = (u32)ptr;
 		}
 		break;
 	case 0x81F:
-		{
-
-		}
+		cmdbuf[1] = Hwcal_ResetQtmCfgBlk();
+		cmdbuf[0] = IPC_MakeHeader(0x81F, 1, 0);
 		break;
 	case 0x820:
-		{
+		if (!IPC_CompareHeader(cmdbuf[0], 0x820, 1, 2) || !IPC_Is_Desc_Buffer(cmdbuf[2], IPC_BUFFER_W)) {
+			cmdbuf[0] = IPC_MakeHeader(0x0, 1, 0);
+			cmdbuf[1] = OS_INVALID_IPC_PARAMATER;
+		} else {
+			void* ptr = (void*)cmdbuf[3];
+			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[2]);
 
+			cmdbuf[1] = Hwcal_GetQtm(ptr, size);
+			cmdbuf[0] = IPC_MakeHeader(0x820, 1, 2);
+			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_W);
+			cmdbuf[3] = (u32)ptr;
 		}
 		break;
 	default:
@@ -604,7 +632,7 @@ void TryMountCFGSystemSave() {
 static inline void initBSS() {
 	extern void* __bss_start__;
 	extern void* __bss_end__;
-	_memset32_aligned(__bss_start__, 0, (size_t)__bss_end__ - (size_t)__bss_start__);
+	memset(__bss_start__, 0, (size_t)__bss_end__ - (size_t)__bss_start__);
 }
 
 void CFGMain() {
@@ -626,8 +654,8 @@ void CFGMain() {
 	Cfg_OpenNandAccess();
 
 	Cfg_AtBootConfigLoad();
-	Cfg_Lfcs_Init();
-	Cfg_SecInfo_Init();
+	Lfcs_Init();
+	SecInfo_Init();
 
 	for (int i = 0; i < SERVICE_COUNT; i++)
 		Err_FailedThrow(srvRegisterService(&session_handles[i + 1], CFG_ServiceNames[i], 25));

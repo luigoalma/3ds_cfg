@@ -6,7 +6,7 @@
 #include <3ds/types.h>
 #include <err.h>
 #include <storage/secinfo.h>
-#include "storage.cpp"
+#include "storage.hpp"
 
 #define SECINFOSIZE 273
 
@@ -200,48 +200,48 @@ ManagedSecInfo_T ManagedSecInfoFile = {
 	}
 };
 
-extern "C" void Cfg_SecInfo_Init() {
+extern "C" void SecInfo_Init() {
 	ManagedSecInfoFile.Manager.Init();
 }
 
-extern "C" void Cfg_SecInfo_SaveToNextSlot() {
+extern "C" void SecInfo_SaveToNextSlot() {
 	ManagedSecInfoFile.Manager.SaveToNextSlot();
 }
 
-extern "C" Result Cfg_SecInfo_CheckSignature() {
+extern "C" Result SecInfo_CheckSignature() {
 	return ManagedSecInfoFile.Manager.CheckSignature();
 }
 
-extern "C" Result Cfg_SecInfo_GetSignature(void* sig, size_t size) {
+extern "C" Result SecInfo_GetSignature(void* sig, size_t size) {
 	if(size < sizeof(Manager.Data.Signature)) // size checks were not originally done
 		return CFG_INVALID_SIZE;
 
 	return ManagedSecInfoFile.GetSignature(sig);
 }
 
-extern "C" Result Cfg_SecInfo_GetRegionByte(u8* region) {
+extern "C" Result SecInfo_GetRegionByte(u8* region) {
 	return ManagedSecInfoFile.GetRegionByte(region);
 }
 
-extern "C" Result Cfg_SecInfo_GetByte0x101(u8* unk) {
+extern "C" Result SecInfo_GetByte0x101(u8* unk) {
 	return ManagedSecInfoFile.GetByte0x101(unk);
 }
 
-extern "C" Result Cfg_SecInfo_GetSerialNumber(char* serial, size_t size) {
+extern "C" Result SecInfo_GetSerialNumber(char* serial, size_t size) {
 	if(size < sizeof(Manager.Data.Serial)) // size checks were not originally done
 		return CFG_INVALID_SIZE;
 
 	return ManagedSecInfoFile.GetSerialNumber(serial);
 }
 
-extern "C" Result Cfg_SecInfo_GetData(void* data, size_t size) {
+extern "C" Result SecInfo_GetData(void* data, size_t size) {
 	if(size < sizeof(Manager.Data.SignedData)) // size checks were not originally done
 		return CFG_INVALID_SIZE;
 
 	return ManagedSecInfoFile.GetData(data);
 }
 
-extern "C" Result Cfg_SecInfo_SetWholeSecInfo(const void* sig, size_t sigsize, const void* data, size_t datasize) {
+extern "C" Result SecInfo_SetWholeSecInfo(const void* sig, size_t sigsize, const void* data, size_t datasize) {
 	if(sigsize < sizeof(Manager.Data.Signature) || datasize < sizeof(Manager.Data.SignedData)) // size checks were not originally done
 		return CFG_INVALID_SIZE;
 

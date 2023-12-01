@@ -2,7 +2,7 @@
 #include <3ds/fs.h>
 #include <3ds/result.h>
 #include <3ds/types.h>
-#include "storage.cpp"
+#include "storage.hpp"
 
 #define FS_NOT_MOUNTED           MAKERESULT(RL_STATUS, RS_NOTFOUND, RM_FS, 101)
 
@@ -80,7 +80,7 @@ namespace SystemSave {
 namespace NandAccess {
 	FS_Archive NandRWFSArchive = 0LLU;
 	FS_Archive NandROFSArchive = 0LLU;
-	const static FS_Path NullPath = {PATH_EMPTY, 1, reinterpret_cast<const void*>(&NullPath.data)};
+	const static FS_Path NullPath = {PATH_EMPTY, 1, reinterpret_cast<const void*>(reinterpret_cast<const u8*>(&NullPath) + offsetof(FS_Path, data))};
 
 	void Open() {
 		if(!NandRWFSArchive) FSUSER_OpenArchive(&NandRWFSArchive, ARCHIVE_NAND_RW, NullPath);
