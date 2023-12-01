@@ -339,9 +339,8 @@ static void CFG_Common_IPCSession(int service_index) {
 		}
 		break;
 	case 0x409:
-		{
-
-		}
+		cmdbuf[1] = Hwcal_ResetAccelerometerCfgBlk();
+		cmdbuf[0] = IPC_MakeHeader(0x409, 1, 0);
 		break;
 	case 0x40A: // cfg:s
 	case 0x819: // cfg:i
@@ -356,9 +355,8 @@ static void CFG_Common_IPCSession(int service_index) {
 		cmdbuf[1] = 0;
 		break;
 	case 0x40C:
-		{
-
-		}
+		cmdbuf[1] = Hwcal_ResetGyroscopeCfgBlk();
+		cmdbuf[0] = IPC_MakeHeader(0x40C, 1, 0);
 		break;
 	case 0x40D:
 		{
@@ -421,7 +419,13 @@ static void CFG_Common_IPCSession(int service_index) {
 		break;
 	case 0x809:
 		{
+			Result res = Hwcal_ResetCirclePadCfgBlk();
 
+			if(R_SUCCEEDED(res))
+				srvPublishToSubscriber(0x10B, 0);
+
+			cmdbuf[0] = IPC_MakeHeader(0x809, 1, 0);
+			cmdbuf[1] = res;
 		}
 		break;
 	case 0x80A:
@@ -529,8 +533,17 @@ static void CFG_Common_IPCSession(int service_index) {
 	// case 0x818 at case 0x408
 	// case 0x819 at case 0x40A
 	case 0x81A:
-		{
+		if (!IPC_CompareHeader(cmdbuf[0], 0x81A, 1, 2) || !IPC_Is_Desc_Buffer(cmdbuf[2], IPC_BUFFER_W)) {
+			cmdbuf[0] = IPC_MakeHeader(0x0, 1, 0);
+			cmdbuf[1] = OS_INVALID_IPC_PARAMATER;
+		} else {
+			void* ptr = (void*)cmdbuf[3];
+			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[2]);
 
+			cmdbuf[1] = Hwcal_GetOuterCams(ptr, size);
+			cmdbuf[0] = IPC_MakeHeader(0x81A, 1, 2);
+			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_W);
+			cmdbuf[3] = (u32)ptr;
 		}
 		break;
 	case 0x81B:

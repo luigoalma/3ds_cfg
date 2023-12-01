@@ -672,6 +672,79 @@ extern "C" Result Hwcal_ResetCStickCfgBlk() {
 	return res;
 }
 
+static void Hwcal_GetOuterCamsNoCheck(void* ptr) {
+	ManagedHwcal_T hwcal;
+	hwcal.Load();
+
+	OuterCamaras_T* _ptr = reinterpret_cast<OuterCamaras_T*>(ptr);
+
+	bool agingPass = hwcal.CheckAgingFlag(CAL_INDEX_OUTERCAMS1);
+
+	if(!agingPass || hwcal.Hwcal.Header.Revision < 2) {
+		memset(&_ptr->Part1, &DummyOuterCams1, sizeof(HWCALOuterCamarasPart1Data_T));
+		memset(&_ptr->Part2, 0, sizeof(HWCALOuterCamarasPart2Data_T));
+	} else if(hwcal.Hwcal.Header.Revision < 4) {
+		hwcal.ReadCalIndex(&_ptr->Part1, CAL_INDEX_OUTERCAMS1);
+		memset(&_ptr->Part2, 0, sizeof(HWCALOuterCamarasPart2Data_T));
+	} else {
+		hwcal.ReadCalIndex(&_ptr->Part1, CAL_INDEX_OUTERCAMS1);
+		hwcal.ReadCalIndex(&_ptr->Part2, CAL_INDEX_OUTERCAMS2);
+	}
+}
+
+extern "C" Result Hwcal_GetOuterCams(void* ptr, size_t size) {
+	if(!ptr || size != sizeof(OuterCamaras_T)) // CFG ignored this check, we don't
+		return CFG_INVALID_SIZE;
+
+	Hwcal_GetOuterCamsNoCheck(ptr);
+	return 0;
+}
+
+extern "C" Result Hwcal_ResetOuterCamsCfgBlk() {
+	void* ptr;
+	Result res;
+
+	res = Cfg_System_GetBlkPtr(&ptr, 0x60000, sizeof(OuterCamaras_T));
+	if(R_SUCCEEDED(res)) {
+		Hwcal_GetOuterCamsNoCheck(ptr);
+		Cfg_SaveConfig();
+	}
+
+	return res;
+}
+
+extern "C" Result Hwcal_ResetGyroscopeCfgBlk() {
+	void* ptr;
+	Result res;
+
+	res = Cfg_System_GetBlkPtr(&ptr, 0x40002, sizeof(HWCALGyroscopeData_T));
+	if(R_SUCCEEDED(res)) {
+		ManagedHwcal_T hwcal;
+		hwcal.Load();
+		hwcal.ReadCalIndex(ptr, CAL_INDEX_GYRO);
+
+		Cfg_SaveConfig();
+	}
+
+	return res;
+}
+
+extern "C" Result Hwcal_ResetAccelerometerCfgBlk() {
+	void* ptr;
+	Result res;
+
+	res = Cfg_System_GetBlkPtr(&ptr, 0x40003, sizeof(HWCALAccelerometerData_T));
+	if(R_SUCCEEDED(res)) {
+		ManagedHwcal_T hwcal;
+		hwcal.Load();
+		hwcal.ReadCalIndex(ptr, CAL_INDEX_ACCELEROMETER);
+
+		Cfg_SaveConfig();
+	}
+
+	return res;
+}
+
 static void Hwcal_GetQtmNoCheck(void* ptr) {
 	ManagedHwcal_T hwcal;
 	hwcal.Load();

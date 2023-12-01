@@ -10,6 +10,10 @@ Result Hwcal_GetCirclePad(void* ptr, size_t size);
 Result Hwcal_ResetCirclePadCfgBlk();
 Result Hwcal_GetCStick(void* ptr, size_t size);
 Result Hwcal_ResetCStickCfgBlk();
+Result Hwcal_GetOuterCams(void* ptr, size_t size);
+Result Hwcal_ResetOuterCamsCfgBlk();
+Result Hwcal_ResetGyroscopeCfgBlk();
+Result Hwcal_ResetAccelerometerCfgBlk();
 Result Hwcal_GetQtm(void* ptr, size_t size);
 Result Hwcal_ResetQtmCfgBlk();
 

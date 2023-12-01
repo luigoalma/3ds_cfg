@@ -141,7 +141,7 @@ static_assert(offsetof(HWCALRtcCorrection_T, Padding) == 2);
 static_assert(sizeofmember(HWCALRtcCorrection_T, FlippedBytes) == 1);
 static_assert(sizeofmember(HWCALRtcCorrection_T, Padding) == 6);
 
-typedef struct PACKED HWCALOuterCamarasPart1Data_T {
+typedef struct {
 	u32 Flags;
 	float Scale;
 	float RotationZ;
@@ -162,7 +162,7 @@ typedef struct PACKED HWCALOuterCamarasPart1Data_T {
 	s16 kGL;
 	s16 kBL;
 	s16 CcmPosition;
-} HWCALOuterCamarasPart1Data_T;
+} PACKED HWCALOuterCamarasPart1Data_T;
 
 typedef struct {
 	HWCALOuterCamarasPart1Data_T Data;
@@ -963,3 +963,12 @@ static_assert(sizeof(CStick_T) == 0x1C);
 static_assert(offsetof(CStick_T, Data) == 0);
 static_assert(offsetof(CStick_T, Unknown) == 8);
 static_assert(sizeofmember(CStick_T, Unknown) == 20);
+
+typedef struct {
+	HWCALOuterCamarasPart1Data_T Part1;
+	HWCALOuterCamarasPart2Data_T Part2;
+} OuterCamaras_T;
+
+static_assert(sizeof(OuterCamaras_T) == 0x96);
+static_assert(offsetof(OuterCamaras_T, Part1) == 0);
+static_assert(offsetof(OuterCamaras_T, Part2) == 138);
