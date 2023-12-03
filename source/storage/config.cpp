@@ -8,63 +8,12 @@
 #include <cfg.h>
 #include <err.h>
 #include "storage.hpp"
+#include "config.hpp"
+#include "hwcal.hpp"
 
 #define UTIL_INVALID_COMBINATION MAKERESULT(RL_USAGE, RS_INVALIDARG, RM_UTIL, RD_INVALID_COMBINATION)
 
-#define CONFIGSIZE 32768
-
 static const FS_Path ConfigPath = {PATH_ASCII, 8, "/config"};
-
-struct ConfigBlkEntry_T
-{
-	u32 Id;
-	union {
-		u32 RelOffset;
-		u8 Data[4];
-	};
-	u16 DataSize;
-	u16 Flags;
-
-	void* GetPtr(void* BasePtr);
-};
-
-static_assert(sizeof(ConfigBlkEntry_T) == 12);
-static_assert(offsetof(ConfigBlkEntry_T, Id) == 0);
-static_assert(offsetof(ConfigBlkEntry_T, RelOffset) == 4);
-static_assert(offsetof(ConfigBlkEntry_T, Data) == 4);
-static_assert(offsetof(ConfigBlkEntry_T, DataSize) == 8);
-static_assert(offsetof(ConfigBlkEntry_T, Flags) == 10);
-static_assert(alignof(ConfigBlkEntry_T) == 4);
-
-union ALIGN(8) ConfigData_T {
-	u8 Raw[CONFIGSIZE];
-	struct {
-		u16 TotalEntries;
-		u16 DataEntryOffset;
-		ConfigBlkEntry_T BlkEntries[];
-	};
-
-	ConfigBlkEntry_T* FindBlkId(u32 Id);
-	bool SanityCheck() const; // Something cfg does not do.
-	void Reset();
-	void Save() const;
-	void Load(); // cfg doesn't care if load fails
-	void SaveFixData() const;
-	bool LoadFixData();
-	void DeleteAndReset();
-	Result GetBlkPtr(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags flags, CFG_BlkFlags bitmask);
-	Result GetBlkPtrForReading(const void*& ptr, u32 blkId, size_t size, CFG_BlkFlags flags);
-	Result GetBlkPtrForWriting(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags flags);
-	Result CreateBlk(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags flags);
-	Result ReadBlk(void* ptr, u32 blkId, size_t size, bool system);
-	Result WriteBlk(const void* ptr, u32 blkId, size_t size, bool system);
-};
-
-static_assert(sizeof(ConfigData_T) == CONFIGSIZE);
-static_assert(offsetof(ConfigData_T, TotalEntries) == 0);
-static_assert(offsetof(ConfigData_T, DataEntryOffset) == 2);
-static_assert(offsetof(ConfigData_T, BlkEntries) == 4);
-static_assert(alignof(ConfigData_T) == 8);
 
 extern "C" Result Cfg_FormatSysSave() {
 	return ::SystemSave::Format(
@@ -88,23 +37,6 @@ extern "C" void Cfg_OpenNandAccess() {
 
 extern "C" void Cfg_DeleteFixData() {
 	Err_FailedThrow(::SystemSave::Delete(::SystemSave::FixDataFSInfo))
-}
-
-inline void* ConfigBlkEntry_T::GetPtr(void* BasePtr) {
-	if(DataSize <= 4) return reinterpret_cast<void*>(&Data[0]);
-	return reinterpret_cast<void*>(reinterpret_cast<u8*>(BasePtr) + RelOffset);
-}
-
-inline ConfigBlkEntry_T* ConfigData_T::FindBlkId(u32 Id) {
-	ConfigBlkEntry_T* ptr = nullptr;
-
-	for(int i = 0; i < TotalEntries; ++i) {
-		if(BlkEntries[i].Id == id) {
-			ptr = &BlkEntries[i];
-		}
-	}
-
-	return ptr;
 }
 
 // Comment note: comment written September 23rd, 2023
@@ -149,12 +81,12 @@ bool ConfigData_T::SanityCheck() const {
 	return pass;
 }
 
-inline void ConfigData_T::Reset() {
+void ConfigData_T::Reset() {
 	TotalEntries = 0;
 	DataEntryOffset = CONFIGSIZE;
 }
 
-inline void ConfigData_T::Save() const {
+void ConfigData_T::Save() const {
 	Handle file = 0;
 	u32 filesize = 0;
 	Result res = 0;
@@ -172,7 +104,7 @@ inline void ConfigData_T::Save() const {
 		::SystemSave::Commit(::SystemSave::NormalFSArchive);
 }
 
-inline void ConfigData_T::Load() {
+void ConfigData_T::Load() {
 	Handle file = 0;
 	u32 filesize = 0;
 	Result res = 0;
@@ -191,7 +123,7 @@ inline void ConfigData_T::Load() {
 	Reset(); // fail? reset
 }
 
-inline void ConfigData_T::SaveFixData() const {
+void ConfigData_T::SaveFixData() const {
 	Handle file = 0;
 	u32 filesize = 0;
 	Result res = 0;
@@ -220,7 +152,7 @@ inline void ConfigData_T::SaveFixData() const {
 	::SystemSave::Close(::SystemSave::FixDataFSArchive);
 }
 
-inline bool ConfigData_T::LoadFixData() {
+bool ConfigData_T::LoadFixData() {
 	Handle file = 0;
 	u32 filesize = 0;
 	Result res = 0;
@@ -253,13 +185,13 @@ inline bool ConfigData_T::LoadFixData() {
 	return pass;
 }
 
-inline void ConfigData_T::DeleteAndReset() {
+void ConfigData_T::DeleteAndReset() {
 	FSUSER_DeleteFile(::SystemSave::NormalFSArchive, ConfigPath);
 	TotalEntries = 0;
 	DataEntryOffset = CONFIGSIZE;
 }
 
-inline Result ConfigData_T::GetBlkPtr(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags accessFlags, CFG_BlkFlags bitmask) {
+Result ConfigData_T::GetBlkPtr(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags accessFlags, CFG_BlkFlags bitmask) {
 	ptr = nullptr;
 
 	if(size == 0 || size > CONFIGSIZE)
@@ -281,15 +213,15 @@ inline Result ConfigData_T::GetBlkPtr(void*& ptr, u32 blkId, size_t size, CFG_Bl
 	return 0;
 }
 
-inline Result ConfigData_T::GetBlkPtrForReading(const void*& ptr, u32 blkId, size_t size, CFG_BlkFlags accessFlags) {
+Result ConfigData_T::GetBlkPtrForReading(const void*& ptr, u32 blkId, size_t size, CFG_BlkFlags accessFlags) {
 	return GetBlkPtr(ptr, blkId, size, accessFlags, BLK_READ_PERM_BITMASK);
 }
 
-inline Result ConfigData_T::GetBlkPtrForWriting(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags accessFlags) {
+Result ConfigData_T::GetBlkPtrForWriting(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags accessFlags) {
 	return GetBlkPtr(ptr, blkId, size, accessFlags, BLK_READ_WRITE_BITMASK);
 }
 
-inline Result ConfigData_T::CreateBlk(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags flags) {
+Result ConfigData_T::CreateBlk(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags flags) {
 	ptr = nullptr;
 
 	if(size == 0 || size > CONFIGSIZE)
@@ -319,7 +251,7 @@ inline Result ConfigData_T::CreateBlk(void*& ptr, u32 blkId, size_t size, CFG_Bl
 	return 0;
 }
 
-inline Result ConfigData_T::UpdateBlkFlags(u32 blkId, CFG_BlkFlags flags) {
+Result ConfigData_T::UpdateBlkFlags(u32 blkId, CFG_BlkFlags flags) {
 	ConfigBlkEntry_T* blk = FindBlkId(blkId);
 
 	if(!blk)
@@ -330,7 +262,7 @@ inline Result ConfigData_T::UpdateBlkFlags(u32 blkId, CFG_BlkFlags flags) {
 	return 0;
 }
 
-inline Result ConfigData_T::ReadBlk(void* ptr, u32 blkId, size_t size, bool system) {
+Result ConfigData_T::ReadBlk(void* ptr, u32 blkId, size_t size, bool system) {
 	const void* _ptr;
 
 	Result res = ConfigSave.GetBlkPtrForReading(_ptr, blkId, size, system ? BLK_SYSTEM_READ_PERM : BLK_USER_READ_PERM);
@@ -354,7 +286,7 @@ inline Result ConfigData_T::ReadBlk(void* ptr, u32 blkId, size_t size, bool syst
 	return 0;
 }
 
-inline Result ConfigData_T::WriteBlk(const void* ptr, u32 blkId, size_t size, bool system) {
+Result ConfigData_T::WriteBlk(const void* ptr, u32 blkId, size_t size, bool system) {
 	void* _ptr;
 
 	Result res = ConfigSave.GetBlkPtrForWriting(_ptr, blkId, size, system ? BLK_SYSTEM_WRITE_PERM : BLK_USER_WRITE_PERM);
@@ -401,6 +333,132 @@ extern "C" void Cfg_SaveConfig() {
 
 extern "C" void Cfg_DeleteAndResetConfig() {
 	ConfigSave.DeleteAndReset();
+}
+
+static void Cfg_CreateHwcalBlks() {
+	void *ptr1,  *ptr2,  *ptr3,  *ptr4,  *ptr5,  *ptr6,  *ptr7,  *ptr8,  *ptr9,  *ptr10;
+	void *ptr11, *ptr12, *ptr13, *ptr14, *ptr15, *ptr16, *ptr17, *ptr18, *ptr19, *ptr20;
+	void *ptr21;
+
+	ManagedHwcal_T hwcal;
+	hwcal.Load();
+
+	u8 rev = hwcal.Hwcal.Header.Revision;
+
+	// original cfg doesnt check success of blk creation...
+
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr1,  0x10000,  sizeof(HWCALRtcCompensationData_T),            BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr2,  0x50000,  sizeof(HWCALScreenFlickerData_T),              BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr3,  0x40000,  sizeof(HWCALTouchData_T),                      BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr4,  0x40002,  sizeof(HWCALGyroscopeData_T),                  BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr5,  0x30000,  sizeof(HWCALRtcCorrectionData_T),              BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr6,  0x40003,  sizeof(HWCALAccelerometerData_T),              BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr7,  0x60000,  sizeof(OuterCamaras_T),                        BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr8,  0x40001,  sizeof(CirclePadParts_T),                      BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr9,  0x50002,  sizeof(HWCALBacklightPwmData_T),               BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr10, 0x50003,  sizeof(HWCALLcdPowerSaveData_T),               BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr11, 0x50004,  sizeof(HWCALLcdPowerSaveData_T),               BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr12, 0x50005,  sizeof(HWCALLcdStereoscopicData_T),            BLK_RW_ANY));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr13, 0x120000, sizeof(HWCALSlidersData_T),                    BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr14, 0x70000,  sizeof(HWCALSound3DFilterData_T),              (rev < 7) ? BLK_RW_SYSTEM : BLK_RW_ANY));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr15, 0x20000,  sizeof(HWCALCodecData_T),                      BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr16, 0x50006,  sizeof(HWCALLcdModeDelayData_T),               BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr17, 0x70002,  sizeof(HWCALMicrophoneEchoCancellationData_T), BLK_RW_ANY));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr18, 0x40004,  sizeof(CStick_T),                              BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr19, 0x50008,  sizeof(HWCALLcdPowerSaveExtraData_T),          BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr20, 0x50007,  sizeof(HWCALPitData_T),                        BLK_RW_SYSTEM));
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr21, 0x180001, sizeof(HWCALQtmData_T),                        BLK_RW_SYSTEM));
+
+	hwcal.ReadCalIndex(ptr1, CAL_INDEX_RTCCOMPENSATION);
+	hwcal.ReadCalIndex(ptr2, CAL_INDEX_SCREENFLICKER);
+	hwcal.ReadCalIndex(ptr3, CAL_INDEX_TOUCH);
+	hwcal.ReadCalIndex(ptr4, CAL_INDEX_GYRO);
+	hwcal.ReadCalIndex(ptr5, CAL_INDEX_RTCCORRECTION);
+	if(hwcal.CheckAgingFlag(CAL_INDEX_ACCELEROMETER)) {
+		hwcal.ReadCalIndex(ptr6, CAL_INDEX_ACCELEROMETER);
+	} else {
+		memcpy(ptr6, DummyAccelerometer, sizeof(HWCALAccelerometerData_T));
+	}
+	Hwcal_GetOuterCamsNoCheck(hwcal, ptr7);
+	Hwcal_GetCirclePadNoCheck(hwcal, ptr8);
+	if(rev < 11) {
+		memcpy(ptr9, &DummyBacklight, sizeof(HWCALBacklightPwmData_T));
+	} else {
+		hwcal.ReadCalIndex(ptr9, CAL_INDEX_BACKLIGHTPWM);
+	}
+	if(rev < 8) {
+		memcpy(ptr10, &DummyLcdPowerSave, sizeof(HWCALLcdPowerSaveData_T));
+		memcpy(ptr11, &DummyLcdPowerSave, sizeof(HWCALLcdPowerSaveData_T));
+	} else {
+		hwcal.ReadCalIndex(ptr10, CAL_INDEX_LCDPOWERSAVE);
+		hwcal.ReadCalIndex(ptr11, CAL_INDEX_LCDPOWERSAVELGY);
+	}
+	if(rev < 10) {
+		memcpy(ptr12, &DummyLcdStereoscopic, sizeof(HWCALLcdStereoscopicData_T));
+	} else {
+		hwcal.ReadCalIndex(ptr12, CAL_INDEX_LCDSTEREOSCOPIC);
+	}
+	if(rev < 7) {
+		memcpy(ptr13, &DummySliders, sizeof(HWCALSlidersData_T));
+		memcpy(ptr14, &DefaultSound3DFilter, sizeof(HWCALSound3DFilterData_T));
+	} else {
+		hwcal.ReadCalIndex(ptr13, CAL_INDEX_SLIDERS);
+		hwcal.ReadCalIndex(ptr14, CAL_INDEX_SOUND3DFILTER);
+	}
+	if(rev < 9) {
+		memcpy(ptr15, &DummyCodec, sizeof(HWCALCodecData_T));
+		if(hwcal.CheckAgingFlag(CAL_INDEX_CODEC)) {
+			HWCALCodecData_T foo;
+			hwcal.ReadCalIndex(reinterpret_cast<void*>(&foo), CAL_INDEX_CODEC);
+			reinterpret_cast<HWCALCodecData_T*>(ptr15)->PGA_GAIN = foo.PGA_GAIN;
+		}
+		memcpy(ptr16, &DummyLcdModeDelay, sizeof(HWCALLcdModeDelayData_T));
+	} else {
+		hwcal.ReadCalIndex(ptr15, CAL_INDEX_CODEC);
+		if(rev < 12) {
+			reinterpret_cast<HWCALCodecData_T*>(ptr15)->AnalogInterval = DummyCodec.AnalogInterval;
+			reinterpret_cast<HWCALCodecData_T*>(ptr15)->Analog_XP_Pullup = DummyCodec.Analog_XP_Pullup;
+		}
+		hwcal.ReadCalIndex(ptr16, CAL_INDEX_LCDMODEDELAY);
+	}
+	if(rev < 13) {
+		memcpy(ptr17, &DummyMicEchoCancel, sizeof(HWCALMicrophoneEchoCancellationData_T));
+	} else {
+		hwcal.ReadCalIndex(ptr17, CAL_INDEX_MICECHOCANCEL);
+	}
+	Hwcal_GetCStickNoCheck(hwcal, ptr18);
+	if(rev < 15) {
+		memset(ptr19, 0, sizeof(HWCALLcdPowerSaveExtraData_T));
+	} else {
+		hwcal.ReadCalIndex(ptr19, CAL_INDEX_LCDPOWERSAVEEXTRA);
+	}
+	if(rev < 16) {
+		memcpy(ptr20, &DefaultPit, sizeof(HWCALPitData_T));
+	} else {
+		hwcal.ReadCalIndex(ptr20, CAL_INDEX_PIT);
+	}
+	if(rev < 18) {
+		memcpy(ptr21, &DefaultQtm, sizeof(HWCALQtmData_T));
+	} else {
+		hwcal.ReadCalIndex(ptr21, CAL_INDEX_QTM);
+	}
+}
+
+static void Cfg_CreateNormalBlks() {
+
+}
+
+extern "C" void Cfg_DeleteAndSetDefaultBlks() {
+	void* ptr = nullptr;
+
+	// this has no reason to fail, nor even does
+	ConfigSave.DeleteAndReset();
+	// yet cfg treated as this may fail and try to write to existing blk if creation failed, which can never fail
+	// if anything fails here, you're either very lucky or very unlucky
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x0, 2, BLK_RW_SYSTEM));
+	*reinterpret_cast<u16*>(ptr) = 57; // current version
+	Cfg_CreateHwcalBlks();
+	Cfg_CreateNormalBlks();
 }
 
 extern "C" Result Cfg_User_ReadBlk(void* ptr, u32 blkId, size_t size) {

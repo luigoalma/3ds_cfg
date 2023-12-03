@@ -15,6 +15,7 @@ void Cfg_AtBootConfigLoad();
 void Cfg_SaveToFixData();
 void Cfg_SaveConfig();
 void Cfg_DeleteAndResetConfig();
+void Cfg_DeleteAndSetDefaultBlks();
 Result Cfg_User_ReadBlk(void* ptr, u32 blkId, size_t size);
 Result Cfg_System_ReadBlk(void* ptr, u32 blkId, size_t size);
 Result Cfg_System_WriteBlk(const void* ptr, u32 blkId, size_t size);

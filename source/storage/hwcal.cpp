@@ -9,10 +9,9 @@
 #include <utils/hmacsha256.h>
 #include <utils/endian.h>
 #include <storage/config.h>
-#include <storage/hwcal.h>
 #include "cfg.h"
 #include "storage.hpp"
-#include "hwcal_dummy_defaults.h"
+#include "hwcal.hpp"
 
 static const FS_Path[2] HwcalPaths = {
 	{PATH_ASCII, 16, "/sys/HWCAL0.dat"},
@@ -71,52 +70,6 @@ static size_t Hwcali2cReadLoop(Handle i2cEEPHandle, void* out, u16 offset, size_
 
 	return total_read;
 }
-
-enum CALIndexes : u8 {
-	CAL_INDEX_RTCCOMPENSATION   = 0,
-	CAL_INDEX_SCREENFLICKER     = 1,
-	CAL_INDEX_OUTERCAMS1        = 2,
-	CAL_INDEX_TOUCH             = 3,
-	CAL_INDEX_CIRCLEPAD1        = 4,
-	CAL_INDEX_CODEC             = 5,
-	CAL_INDEX_GYRO              = 6,
-	CAL_INDEX_RTCCORRECTION     = 7,
-	CAL_INDEX_ACCELEROMETER     = 8,
-	CAL_INDEX_SOUND3DFILTER     = 9,
-	CAL_INDEX_LCDPOWERSAVE      = 10,
-	CAL_INDEX_LCDSTEREOSCOPIC   = 11,
-	CAL_INDEX_BACKLIGHTPWM      = 12,
-	CAL_INDEX_CIRCLEPAD2        = 13,
-	CAL_INDEX_OUTERCAMS2        = 14,
-	CAL_INDEX_LCDPOWERSAVELGY   = 15,
-	CAL_INDEX_SLIDERS           = 16,
-	CAL_INDEX_LCDMODEDELAY      = 17,
-	CAL_INDEX_MICECHOCANCEL     = 18,
-	CAL_INDEX_CSTICK            = 19,
-	CAL_INDEX_DEADINDEX20       = 20,
-	CAL_INDEX_LCDPOWERSAVEEXTRA = 21,
-	CAL_INDEX_PIT               = 22,
-	CAL_INDEX_QTM               = 23
-};
-
-struct ManagedHwcal_T {
-	HWCAL_T Hwcal;
-	int Index;
-	bool SystemUsesEEP:1;
-	bool SystemIsDev:1;
-
-	bool CheckAgingFlag(CALIndexes index) const;
-	bool ReadCalIndex(void* ptr, CALIndexes index) const;
-	bool WriteCalIndex(const void* ptr, CALIndexes index, u16 agingFlag);
-	void GenerateDummyHeader();
-	void GenerateDummy();
-	bool WriteDummy(int index);
-	bool CheckHeaderAndHash() const;
-	bool ReadFromI2C(int index);
-	bool ReadFromFile(int index);
-	bool ReadIndex(int index);
-	void Load();
-};
 
 bool ManagedHwcal_T::CheckAgingFlag(CALIndexes index) const {
 	if(index < 16) {
@@ -586,10 +539,7 @@ void ManagedHwcal_T::Load() {
 	} else Index = 1;
 }
 
-static void Hwcal_GetCirclePadNoCheck(void* ptr) {
-	ManagedHwcal_T hwcal;
-	hwcal.Load();
-
+void Hwcal_GetCirclePadNoCheck(ManagedHwcal_T& hwcal, void* ptr) {
 	CirclePadParts_T* _ptr = reinterpret_cast<CirclePadParts_T*>(ptr);
 
 	HWCALCirclePadPart1Data_T part1;
@@ -616,6 +566,13 @@ static void Hwcal_GetCirclePadNoCheck(void* ptr) {
 	_ptr->CenterY = part1.CenterY;
 }
 
+static void Hwcal_GetCirclePadNoCheck(void* ptr) {
+	ManagedHwcal_T hwcal;
+	hwcal.Load();
+
+	Hwcal_GetCirclePadNoCheck(hwcal, ptr)
+}
+
 extern "C" Result Hwcal_GetCirclePad(void* ptr, size_t size) {
 	if(!ptr || size != sizeof(CirclePadParts_T)) // CFG ignored this check, we don't
 		return CFG_INVALID_SIZE;
@@ -637,10 +594,7 @@ extern "C" Result Hwcal_ResetCirclePadCfgBlk() {
 	return res;
 }
 
-static void Hwcal_GetCStickNoCheck(void* ptr) {
-	ManagedHwcal_T hwcal;
-	hwcal.Load();
-
+void Hwcal_GetCStickNoCheck(ManagedHwcal_T& hwcal, void* ptr) {
 	CStick_T* _ptr = reinterpret_cast<CStick_T*>(ptr);
 
 	if(hwcal.Hwcal.Header.Revision < 15) {
@@ -649,6 +603,13 @@ static void Hwcal_GetCStickNoCheck(void* ptr) {
 		hwcal.ReadCalIndex(&_ptr->Data, CAL_INDEX_CSTICK);
 		memset(&_ptr->Unknown[0], 0, sizeofmember(CStick_T, Unknown));
 	}
+}
+
+static void Hwcal_GetCStickNoCheck(void* ptr) {
+	ManagedHwcal_T hwcal;
+	hwcal.Load();
+
+	Hwcal_GetCStickNoCheck(hwcal, ptr);
 }
 
 extern "C" Result Hwcal_GetCStick(void* ptr, size_t size) {
@@ -672,10 +633,7 @@ extern "C" Result Hwcal_ResetCStickCfgBlk() {
 	return res;
 }
 
-static void Hwcal_GetOuterCamsNoCheck(void* ptr) {
-	ManagedHwcal_T hwcal;
-	hwcal.Load();
-
+void Hwcal_GetOuterCamsNoCheck(ManagedHwcal_T& hwcal, void* ptr) {
 	OuterCamaras_T* _ptr = reinterpret_cast<OuterCamaras_T*>(ptr);
 
 	bool agingPass = hwcal.CheckAgingFlag(CAL_INDEX_OUTERCAMS1);
@@ -690,6 +648,13 @@ static void Hwcal_GetOuterCamsNoCheck(void* ptr) {
 		hwcal.ReadCalIndex(&_ptr->Part1, CAL_INDEX_OUTERCAMS1);
 		hwcal.ReadCalIndex(&_ptr->Part2, CAL_INDEX_OUTERCAMS2);
 	}
+}
+
+static void Hwcal_GetOuterCamsNoCheck(void* ptr) {
+	ManagedHwcal_T hwcal;
+	hwcal.Load();
+
+	Hwcal_GetOuterCamsNoCheck(hwcal, ptr);
 }
 
 extern "C" Result Hwcal_GetOuterCams(void* ptr, size_t size) {
