@@ -7,6 +7,7 @@
 #include <3ds/types.h>
 #include <cfg.h>
 #include <err.h>
+#include <storage/secinfo.h>
 #include "storage.hpp"
 #include "config.hpp"
 #include "hwcal.hpp"
@@ -445,7 +446,120 @@ static void Cfg_CreateHwcalBlks() {
 }
 
 static void Cfg_CreateNormalBlks() {
+	void *ptr;
 
+	auto hw = osWaitRunningHw();
+	bool snake = hw == HW_UNKNOWN || hw == HW_SNAKE_PRODUCT || hw == HW_SNAKE_IS_DEBUGGER || hw == HW_SNAKE_IS_CAPTURE || hw == HW_SNAKE_KMC_DEBUGGER;
+
+	static const u64 home_tids[7] = {
+		0x0004003000008202LLU, // JPN
+		0x0004003000008F02LLU, // USA
+		0x0004003000009802LLU, // EUR
+		0x0004003000008202LLU, // AUS - cfg default to JPN tid
+		0x000400300000A102LLU, // CHN
+		0x000400300000A902LLU, // KOR
+		0x000400300000B102LLU, // TWN
+	};
+
+	u8 region = 0;
+	SecInfo_GetRegionByte(&region);
+
+	u64 target_home_tid = home_tids[(region > 6) ? 0 : region];
+
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x30001,  8,     BLK_RW_ANY));
+	*reinterpret_cast<u64*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x30002,  8,     BLK_RW_SYSTEM));
+	*reinterpret_cast<u64*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x50001,  2,     BLK_RW_SYSTEM));
+	*reinterpret_cast<u16*>(ptr) = 0x500;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x80000,  0xC00, BLK_RW_SYSTEM));
+	memset(ptr, 0, 0xC00);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x80001,  0xC00, BLK_RW_SYSTEM));
+	memset(ptr, 0, 0xC00);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x80002,  0xC00, BLK_RW_SYSTEM));
+	memset(ptr, 0, 0xC00);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xA0000,  0x1C,  BLK_RW_ANY));
+	memset(ptr, 0, 0x1C);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xA0001,  2,     BLK_RW_ANY));
+	*reinterpret_cast<u16*>(ptr) = 0x0101;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xA0002,  1,     BLK_RW_ANY));
+	*reinterpret_cast<u8*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xB0001,  0x800, BLK_RW_ANY));
+	memset(ptr, 0, 0x800);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xB0002,  0x800, BLK_RW_ANY));
+	memset(ptr, 0, 0x800);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xB0000,  4,     BLK_RW_ANY));
+	*reinterpret_cast<u32*>(ptr) = 0xFFFFFFFF;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xB0003,  4,     BLK_RW_ANY));
+	*reinterpret_cast<u32*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x90000,  8,     BLK_RW_ANY));
+	*reinterpret_cast<u64*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x90001,  8,     BLK_RW_ANY));
+	*reinterpret_cast<u64*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x90002,  4,     BLK_RW_ANY));
+	*reinterpret_cast<u32*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xC0000,  0xC0,  BLK_RW_ANY));
+	memset(ptr, 0, 0xC0);
+	reinterpret_cast<u8*>(ptr)[9] = 0x14;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xC0001,  0x14,  BLK_RW_ANY));
+	memset(ptr, 0, 0x14);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xC0002,  0x200, BLK_RW_ANY));
+	memset(ptr, 0, 0x200);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xD0000,  4,     BLK_RW_ANY));
+	*reinterpret_cast<u32*>(ptr) = 0x00010000;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xE0000,  1,     BLK_RW_ANY));
+	*reinterpret_cast<u8*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x70001,  1,     BLK_RW_ANY));
+	*reinterpret_cast<u8*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xF0000,  0x10,  BLK_RW_SYSTEM));
+	reinterpret_cast<u64*>(ptr)[0] = 0;
+	reinterpret_cast<u64*>(ptr)[1] = snake ? 0x300000006LLU: 0x300000000LLU;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xF0001,  8,     BLK_RW_SYSTEM));
+	*reinterpret_cast<u64*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xF0003,  1,     BLK_RW_SYSTEM));
+	*reinterpret_cast<u8*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xF0004,  4,     BLK_RW_SYSTEM));
+	*reinterpret_cast<u32*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x100000, 2,     BLK_RW_SYSTEM));
+	*reinterpret_cast<u16*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x100001, 0x94,  BLK_RW_SYSTEM));
+	memset(ptr, 0, 0x94);
+	reinterpret_cast<u8*>(ptr)[13] = 0x30;
+	reinterpret_cast<u8*>(ptr)[14] = 0x30;
+	reinterpret_cast<u8*>(ptr)[15] = 0x30;
+	reinterpret_cast<u8*>(ptr)[16] = 0x30;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x100002, 1,     BLK_RW_SYSTEM));
+	*reinterpret_cast<u8*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x100003, 0x10,  BLK_RW_SYSTEM));
+	reinterpret_cast<u64*>(ptr)[0] = 0;
+	reinterpret_cast<u64*>(ptr)[1] = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x110000, 4,     BLK_RW_SYSTEM));
+	*reinterpret_cast<u32*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x110001, 8,     BLK_RW_SYSTEM));
+	*reinterpret_cast<u64*>(ptr) = target_home_tid; // only for dev, unless it's an extended memory game reboot on an o3ds, that *suddenly* matters
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x130000, 4,     BLK_RW_ANY));
+	*reinterpret_cast<u32*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x150000, 4,     BLK_RW_SYSTEM));
+	*reinterpret_cast<u32*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x150001, 8,     BLK_RW_SYSTEM));
+	*reinterpret_cast<u64*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x160000, 4,     BLK_RW_ANY));
+	*reinterpret_cast<u32*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x170000, 4,     BLK_RW_ANY));
+	*reinterpret_cast<u32*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x180000, 4,     BLK_RW_SYSTEM));
+	*reinterpret_cast<u32*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x50009,  8,     BLK_RW_SYSTEM));
+	reinterpret_cast<float*>(ptr)[0] = 1.0; // 0x3F800000
+	reinterpret_cast<u32*>(ptr)[1]   = 0x100;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x190000, 1,     BLK_RW_SYSTEM));
+	*reinterpret_cast<u8*>(ptr) = 0;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xF0005,  4,     BLK_RW_SYSTEM));
+	*reinterpret_cast<u32*>(ptr) = 1;
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xF0006,  0x28,  BLK_RW_SYSTEM));
+	memcpy(ptr, 0, 0x28);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x150002, 4,     BLK_RW_ANY));
+	*reinterpret_cast<u32*>(ptr) = 0;
 }
 
 extern "C" void Cfg_DeleteAndSetDefaultBlks() {

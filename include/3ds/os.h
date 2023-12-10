@@ -10,6 +10,7 @@ extern "C" {
 #endif
 
 typedef enum PACKED RUNNING_HW {
+    HW_UNKNOWN = 0,
     HW_PRODUCT = 1,
     HW_TS_BOARD = 2,
     HW_KMC_DEBUGGER = 3,
