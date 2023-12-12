@@ -402,9 +402,9 @@ static void CFG_Common_IPCSession(int service_index) {
 		cmdbuf[1] = 0;
 		break;
 	case 0x806:
-		{
-
-		}
+		Cfg_DeleteAndSetDefaultBlks();
+		cmdbuf[0] = IPC_MakeHeader(0x806, 1, 0);
+		cmdbuf[1] = 0;
 		break;
 	case 0x807:
 		// originally resulted in wasted cycles to reach a no-op
