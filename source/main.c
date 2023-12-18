@@ -413,9 +413,8 @@ static void CFG_Common_IPCSession(int service_index) {
 		cmdbuf[1] = 0;
 		break;
 	case 0x808:
-		{
-
-		}
+		cmdbuf[0] = IPC_MakeHeader(0x808, 1, 0);
+		cmdbuf[1] = Cfg_UpgradeSave();
 		break;
 	case 0x809:
 		{
@@ -669,6 +668,9 @@ void CFGMain() {
 	Cfg_AtBootConfigLoad();
 	Lfcs_Init();
 	SecInfo_Init();
+	// spi!!
+	Cfg_UpgradeSave();
+	// id block generation function needed
 
 	for (int i = 0; i < SERVICE_COUNT; i++)
 		Err_FailedThrow(srvRegisterService(&session_handles[i + 1], CFG_ServiceNames[i], 25));
