@@ -40,7 +40,7 @@ union ALIGN(8) ConfigData_T {
 	void SaveFixData() const;
 	bool LoadFixData();
 	void DeleteAndReset();
-	Result GetBlkPtr(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags flags, CFG_BlkFlags bitmask);
+	Result GetBlkPtr(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags flags, CFG_BlkFlags bitmask, bool exactMatchAccess = false);
 	Result GetBlkPtrForReading(const void*& ptr, u32 blkId, size_t size, CFG_BlkFlags flags);
 	Result GetBlkPtrForWriting(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags flags);
 	Result CreateBlk(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags flags);

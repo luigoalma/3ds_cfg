@@ -218,10 +218,15 @@ typedef enum PACKED CFG_BlkFlags {
 	BLK_RW_SYSTEM = BLK_RO_SYSTEM | BLK_SYSTEM_WRITE_PERM,
 	BLK_RW_ANY = BLK_RO_ANY | BLK_SYSTEM_WRITE_PERM, // user never writes
 
-	BLK_READ_PERM_BITMASK = BLK_SYSTEM_READ_PERM | BLK_USER_READ_PERM,
-	BLK_WRITE_PERM_BITMASK =  BLK_SYSTEM_WRITE_PERM | BLK_USER_WRITE_PERM // mask used on write function when checking bits, even tho user can never write
+	BLK_SYSTEM_ALL_PERM = BLK_SYSTEM_READ_PERM | BLK_SYSTEM_WRITE_PERM,
+	BLK_USER_ALL_PERM = BLK_USER_READ_PERM | BLK_USER_WRITE_PERM,
 
-	BLK_MAX_16BIT = 0xFFFF; // force 16bit
+	BLK_READ_PERM_BITMASK = BLK_SYSTEM_READ_PERM | BLK_USER_READ_PERM,
+	BLK_WRITE_PERM_BITMASK =  BLK_SYSTEM_WRITE_PERM | BLK_USER_WRITE_PERM, // mask used on write function when checking bits, even tho user can never write
+
+	BLK_ALL_PERM_BITMASK = BLK_SYSTEM_ALL_PERM | BLK_USER_ALL_PERM,
+
+	BLK_MAX_16BIT = 0xFFFF // force 16bit
 } CFG_BlkFlags;
 
 static_assert(sizeof(CFG_BlkFlags) == 2);

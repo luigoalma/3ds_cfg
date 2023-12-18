@@ -27,7 +27,9 @@ enum CALIndexes : u8 {
 	CAL_INDEX_DEADINDEX20       = 20,
 	CAL_INDEX_LCDPOWERSAVEEXTRA = 21,
 	CAL_INDEX_PIT               = 22,
-	CAL_INDEX_QTM               = 23
+	CAL_INDEX_QTM               = 23,
+	CAL_INDEX_MAX               = CAL_INDEX_QTM,
+	CAL_INDEX_COUNT             = CAL_INDEX_MAX+1
 };
 
 struct ManagedHwcal_T {
@@ -37,7 +39,8 @@ struct ManagedHwcal_T {
 	bool SystemIsDev:1;
 
 	bool CheckAgingFlag(CALIndexes index) const;
-	bool ReadCalIndex(void* ptr, CALIndexes index) const;
+	bool ReadCalIndex(void* ptr, CALIndexes index, bool cleanOnFail = true) const;
+	bool ReadCalIndexWithDefault(void* ptr, CALIndexes index, const void* defaultValue = nullptr, int minimalRevision = 0) const;
 	bool WriteCalIndex(const void* ptr, CALIndexes index, u16 agingFlag);
 	void GenerateDummyHeader();
 	void GenerateDummy();

@@ -234,7 +234,7 @@ const HWCALPitData_T DummyPit = (HWCALPitData_T){
 	.IRFactor = 0x4C2B
 };
 
-// Why? Used on formatting save
+// Why? Used on formatting or upgrading save
 const HWCALPitData_T DefaultPit = (HWCALPitData_T){
 	.VisibleFactor = 0x4000,
 	.IRFactor = 0x4000

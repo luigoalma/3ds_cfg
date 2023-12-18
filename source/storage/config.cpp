@@ -192,7 +192,7 @@ void ConfigData_T::DeleteAndReset() {
 	DataEntryOffset = CONFIGSIZE;
 }
 
-Result ConfigData_T::GetBlkPtr(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags accessFlags, CFG_BlkFlags bitmask) {
+Result ConfigData_T::GetBlkPtr(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags accessFlags, CFG_BlkFlags bitmask, bool exactMatchAccess) {
 	ptr = nullptr;
 
 	if(size == 0 || size > CONFIGSIZE)
@@ -203,7 +203,12 @@ Result ConfigData_T::GetBlkPtr(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags 
 	if(!blk)
 		return CFG_NOT_FOUND;
 
-	if(!(blk->Flags & accessFlags & bitmask))
+	u16 flags = blk->Flags & accessFlags & bitmask;
+
+	if(!flags)
+		return CFG_NOT_AUTHORIZED;
+
+	if(exactMatchAccess && flags != accessFlags)
 		return CFG_NOT_AUTHORIZED;
 
 	if(blk->DataSize != size)
@@ -376,73 +381,35 @@ static void Cfg_CreateHwcalBlks() {
 	hwcal.ReadCalIndex(ptr4, CAL_INDEX_GYRO);
 	hwcal.ReadCalIndex(ptr5, CAL_INDEX_RTCCORRECTION);
 	if(hwcal.CheckAgingFlag(CAL_INDEX_ACCELEROMETER)) {
-		hwcal.ReadCalIndex(ptr6, CAL_INDEX_ACCELEROMETER);
+		hwcal.ReadCalIndexWithDefault(ptr6, CAL_INDEX_ACCELEROMETER, &DummyAccelerometer);
 	} else {
 		memcpy(ptr6, DummyAccelerometer, sizeof(HWCALAccelerometerData_T));
 	}
 	Hwcal_GetOuterCamsNoCheck(hwcal, ptr7);
 	Hwcal_GetCirclePadNoCheck(hwcal, ptr8);
-	if(rev < 11) {
-		memcpy(ptr9, &DummyBacklight, sizeof(HWCALBacklightPwmData_T));
-	} else {
-		hwcal.ReadCalIndex(ptr9, CAL_INDEX_BACKLIGHTPWM);
-	}
-	if(rev < 8) {
-		memcpy(ptr10, &DummyLcdPowerSave, sizeof(HWCALLcdPowerSaveData_T));
-		memcpy(ptr11, &DummyLcdPowerSave, sizeof(HWCALLcdPowerSaveData_T));
-	} else {
-		hwcal.ReadCalIndex(ptr10, CAL_INDEX_LCDPOWERSAVE);
-		hwcal.ReadCalIndex(ptr11, CAL_INDEX_LCDPOWERSAVELGY);
-	}
-	if(rev < 10) {
-		memcpy(ptr12, &DummyLcdStereoscopic, sizeof(HWCALLcdStereoscopicData_T));
-	} else {
-		hwcal.ReadCalIndex(ptr12, CAL_INDEX_LCDSTEREOSCOPIC);
-	}
-	if(rev < 7) {
-		memcpy(ptr13, &DummySliders, sizeof(HWCALSlidersData_T));
-		memcpy(ptr14, &DefaultSound3DFilter, sizeof(HWCALSound3DFilterData_T));
-	} else {
-		hwcal.ReadCalIndex(ptr13, CAL_INDEX_SLIDERS);
-		hwcal.ReadCalIndex(ptr14, CAL_INDEX_SOUND3DFILTER);
-	}
+	hwcal.ReadCalIndexWithDefault(ptr9, CAL_INDEX_BACKLIGHTPWM, &DummyBacklight, 11);
+	hwcal.ReadCalIndexWithDefault(ptr10, CAL_INDEX_LCDPOWERSAVE, &DummyLcdPowerSave, 8);
+	hwcal.ReadCalIndexWithDefault(ptr11, CAL_INDEX_LCDPOWERSAVELGY, &DummyLcdPowerSave, 8);
+	hwcal.ReadCalIndexWithDefault(ptr12, CAL_INDEX_LCDSTEREOSCOPIC, &DummyLcdStereoscopic, 10);
+	hwcal.ReadCalIndexWithDefault(ptr13, CAL_INDEX_SLIDERS, &DummySliders, 7);
+	hwcal.ReadCalIndexWithDefault(ptr14, CAL_INDEX_SOUND3DFILTER, &DefaultSound3DFilter, 7);
+	hwcal.ReadCalIndexWithDefault(ptr15, CAL_INDEX_CODEC, &DummyCodec, 9);
 	if(rev < 9) {
-		memcpy(ptr15, &DummyCodec, sizeof(HWCALCodecData_T));
 		if(hwcal.CheckAgingFlag(CAL_INDEX_CODEC)) {
 			HWCALCodecData_T foo;
 			hwcal.ReadCalIndex(reinterpret_cast<void*>(&foo), CAL_INDEX_CODEC);
 			reinterpret_cast<HWCALCodecData_T*>(ptr15)->PGA_GAIN = foo.PGA_GAIN;
 		}
-		memcpy(ptr16, &DummyLcdModeDelay, sizeof(HWCALLcdModeDelayData_T));
-	} else {
-		hwcal.ReadCalIndex(ptr15, CAL_INDEX_CODEC);
-		if(rev < 12) {
-			reinterpret_cast<HWCALCodecData_T*>(ptr15)->AnalogInterval = DummyCodec.AnalogInterval;
-			reinterpret_cast<HWCALCodecData_T*>(ptr15)->Analog_XP_Pullup = DummyCodec.Analog_XP_Pullup;
-		}
-		hwcal.ReadCalIndex(ptr16, CAL_INDEX_LCDMODEDELAY);
+	} else if(rev < 12) {
+		reinterpret_cast<HWCALCodecData_T*>(ptr15)->AnalogInterval = DummyCodec.AnalogInterval;
+		reinterpret_cast<HWCALCodecData_T*>(ptr15)->Analog_XP_Pullup = DummyCodec.Analog_XP_Pullup;
 	}
-	if(rev < 13) {
-		memcpy(ptr17, &DummyMicEchoCancel, sizeof(HWCALMicrophoneEchoCancellationData_T));
-	} else {
-		hwcal.ReadCalIndex(ptr17, CAL_INDEX_MICECHOCANCEL);
-	}
+	hwcal.ReadCalIndexWithDefault(ptr16, CAL_INDEX_LCDMODEDELAY, &DummyLcdModeDelay, 9);
+	hwcal.ReadCalIndexWithDefault(ptr17, CAL_INDEX_MICECHOCANCEL, &DummyMicEchoCancel, 13);
 	Hwcal_GetCStickNoCheck(hwcal, ptr18);
-	if(rev < 15) {
-		memset(ptr19, 0, sizeof(HWCALLcdPowerSaveExtraData_T));
-	} else {
-		hwcal.ReadCalIndex(ptr19, CAL_INDEX_LCDPOWERSAVEEXTRA);
-	}
-	if(rev < 16) {
-		memcpy(ptr20, &DefaultPit, sizeof(HWCALPitData_T));
-	} else {
-		hwcal.ReadCalIndex(ptr20, CAL_INDEX_PIT);
-	}
-	if(rev < 18) {
-		memcpy(ptr21, &DefaultQtm, sizeof(HWCALQtmData_T));
-	} else {
-		hwcal.ReadCalIndex(ptr21, CAL_INDEX_QTM);
-	}
+	hwcal.ReadCalIndexWithDefault(ptr19, CAL_INDEX_LCDPOWERSAVEEXTRA, nullptr, 15);
+	hwcal.ReadCalIndexWithDefault(ptr20, CAL_INDEX_PIT, &DefaultPit, 16);
+	hwcal.ReadCalIndexWithDefault(ptr21, CAL_INDEX_QTM, &DefaultQtm, 18);
 }
 
 static void Cfg_CreateNormalBlks() {
@@ -573,6 +540,183 @@ extern "C" void Cfg_DeleteAndSetDefaultBlks() {
 	*reinterpret_cast<u16*>(ptr) = 57; // current version
 	Cfg_CreateHwcalBlks();
 	Cfg_CreateNormalBlks();
+}
+
+extern "C" Result Cfg_UpgradeSave() {
+	ManagedHwcal_T hwcal;
+	u8 rev = 0;
+
+	Result res = 0;
+	void* ptr;
+	const void* cptr;
+
+	u16 version;
+
+	if(R_FAILED(ConfigSave.ReadBlk(&version, 0x0, 2, true))) {
+		Cfg_DeleteAndSetDefaultBlks();
+		return 0;
+	}
+
+	if(version < 15) {
+		// cfg continues after this ??
+		// Why not just format? Version upgrades after format!
+		Cfg_DeleteAndSetDefaultBlks();
+	}
+
+	if(version < 50) { // dont waste time if version
+		hwcal.Load();
+		rev = hwcal.Hwcal.Header.Revision;
+	}
+
+	if(version < 16) {
+		res = ConfigSave.GetBlkPtr(ptr, 0x20000, sizeof(HWCALCodecData_T), BLK_SYSTEM_ALL_PERM, BLK_ALL_PERM_BITMASK, true);
+		if(R_FAILED(res)) return res;
+
+		// also this next segment is off place?
+		// format already does the correct blk for 0x20000 based on hwcal
+		// but in this condition, we reset some codec block like if always hwcal 9 <= revision < 12
+
+		reinterpret_cast<HWCALCodecData_T*>(ptr)->AnalogInterval = DummyCodec.AnalogInterval;
+		reinterpret_cast<HWCALCodecData_T*>(ptr)->Analog_XP_Pullup = DummyCodec.Analog_XP_Pullup;
+	}
+
+	if(version < 17) {
+		res = ConfigSave.CreateBlk(ptr, 0xC0001, 0x14, BLK_RW_ANY);
+		if(R_FAILED(res)) return res;
+		memset(ptr, 0, 0x14);
+	}
+
+	if(version < 18) {
+		res = ConfigSave.CreateBlk(ptr, 0x70002, sizeof(HWCALMicrophoneEchoCancellationData_T), BLK_RW_ANY);
+		if(R_FAILED(res)) return res;
+		// system's hwcal is not considered... why exactly?
+		memcpy(ptr, &DummyMicEchoCancel, sizeof(HWCALMicrophoneEchoCancellationData_T));
+	}
+
+	if(version < 19) {
+		ConfigBlkEntry_T* blk = ConfigSave.FindBlkId(0xE0000);
+		if(!blk) return CFG_NOT_FOUND;
+		blk->Flags = BLK_RW_ANY;
+	}
+
+	if(version < 20) {
+		res = ConfigSave.GetBlkPtrForReading(cptr, 0x90001, 8, BLK_SYSTEM_READ_PERM);
+		if(R_FAILED(res)) return res;
+		res = ConfigSave.CreateBlk(ptr, 0x90002, 4, BLK_RW_ANY);
+		if(R_FAILED(res)) return res;
+		*reinterpret_cast<u32*>(ptr) = reinterpret_cast<const u16*>(cptr)[3];
+	}
+
+	if(version < 50) {
+		// starting at version 50, we start caring about blocks already existing?
+
+		res = ConfigSave.CreateBlk(ptr, 0xF0004, 4, BLK_RW_SYSTEM);
+		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
+		if(res != CFG_ALREADY_EXISTS) 
+			*reinterpret_cast<u32*>(ptr) = 0;
+
+		res = ConfigSave.CreateBlk(ptr, 0x150000, 4, BLK_RW_SYSTEM);
+		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
+		if(res != CFG_ALREADY_EXISTS) 
+			*reinterpret_cast<u32*>(ptr) = 0;
+
+		res = ConfigSave.CreateBlk(ptr, 0x160000, 4, BLK_RW_ANY);
+		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
+		if(res != CFG_ALREADY_EXISTS) 
+			*reinterpret_cast<u32*>(ptr) = 0;
+
+		res = ConfigSave.CreateBlk(ptr, 0x170000, 4, BLK_RW_ANY);
+		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
+		if(res != CFG_ALREADY_EXISTS) 
+			*reinterpret_cast<u32*>(ptr) = 0;
+
+		res = ConfigSave.CreateBlk(ptr, 0x40004, sizeof(CStick_T), BLK_RW_SYSTEM);
+		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
+		if(res != CFG_ALREADY_EXISTS) 
+			Hwcal_GetCStickNoCheck(hwcal, ptr);
+
+		res = ConfigSave.CreateBlk(ptr, 0x50008, sizeof(HWCALLcdPowerSaveExtraData_T), BLK_RW_SYSTEM);
+		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
+		if(res != CFG_ALREADY_EXISTS) 
+			hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_LCDPOWERSAVEEXTRA, nullptr, 15);
+
+		res = ConfigSave.CreateBlk(ptr, 0x50007, sizeof(HWCALPitData_T), BLK_RW_SYSTEM);
+		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
+		if(res != CFG_ALREADY_EXISTS) 
+			hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_PIT, &DefaultPit, 16);
+
+		res = ConfigSave.CreateBlk(ptr, 0x180000, 4, BLK_RW_SYSTEM);
+		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
+		if(res != CFG_ALREADY_EXISTS) 
+			*reinterpret_cast<u32*>(ptr) = 0;
+
+		res = ConfigSave.CreateBlk(ptr, 0x50009, 8, BLK_RW_SYSTEM);
+		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
+		if(res != CFG_ALREADY_EXISTS) 
+		{
+			reinterpret_cast<float*>(ptr)[0] = 1.0; // 0x3F800000
+			reinterpret_cast<u32*>(ptr)[1]   = 0x100;
+		}
+
+		res = ConfigSave.CreateBlk(ptr, 0x180001, sizeof(HWCALQtmData_T), BLK_RW_SYSTEM);
+		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
+		if(res != CFG_ALREADY_EXISTS) 
+			hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_QTM, &DefaultQtm, 18);
+
+		// after this point, cfg would check for version < 50 *again*
+		// and **now** load hwcal on the previous blocks that are hwcal related
+	}
+
+	if(version < 51) {
+		res = ConfigSave.CreateBlk(ptr, 0xC0002, 0x200, BLK_RW_ANY);
+		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
+		if(res != CFG_ALREADY_EXISTS) memset(ptr, 0, 0x200);
+	}
+
+	if(version < 52) {
+		res = ConfigSave.CreateBlk(ptr, 0x150001, 8, BLK_RW_SYSTEM);
+		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
+		if(res != CFG_ALREADY_EXISTS) *reinterpret_cast<u64*>(ptr) = 0;
+	}
+
+	// suddenly, we don't care again about existing cfg blocks!!
+	if(version < 53) {
+		res = ConfigSave.CreateBlk(ptr, 0x190000, 1, BLK_RW_SYSTEM);
+		if(R_FAILED(res)) return res;
+		*reinterpret_cast<u8*>(ptr) = 0;
+	}
+
+	if(version < 54) {
+		res = ConfigSave.CreateBlk(ptr, 0xF0005, 4, BLK_RW_SYSTEM);
+		if(R_FAILED(res)) return res;
+		*reinterpret_cast<u32*>(ptr) = 1;
+	}
+
+	if(version < 55) {
+		res = ConfigSave.CreateBlk(ptr, 0xF0006, 0x28, BLK_RW_SYSTEM);
+		if(R_FAILED(res)) return res;
+		memset(ptr, 0, 0x28);
+	}
+
+	if(version < 56) {
+		res = ConfigSave.CreateBlk(ptr, 0x150002, 4, BLK_RW_ANY); // originally created as SYSTEM
+		if(R_FAILED(res)) return res;
+		*reinterpret_cast<u32*>(ptr) = 0;
+	}
+
+	if(version >= 56 && version < 57) {
+		ConfigBlkEntry_T* blk = ConfigSave.FindBlkId(0x150002);
+		if(!blk) return CFG_NOT_FOUND;
+		blk->Flags = BLK_RW_ANY;
+	}
+
+	res = ConfigSave.GetBlkPtrForWriting(ptr, 0x0, 2, BLK_SYSTEM_WRITE_PERM);
+	if(R_FAILED(res)) return res;
+	*reinterpret_cast<u16*>(ptr) = 57;
+
+	Cfg_SaveConfig();
+
+	return 0;
 }
 
 extern "C" Result Cfg_User_ReadBlk(void* ptr, u32 blkId, size_t size) {

@@ -139,24 +139,35 @@ static void CAL_COPY(void* dst, const void* src) {
 }
 
 template<typename T>
-static bool CAL_COPY_FLIPPERCHECK(void* dst, const void* src) {
+static bool CAL_COPY_FLIPPERCHECK(void* dst, const void* src, bool cleanOnFail) {
 	T* _dst = reinterpret_cast<T*>(dst);
 	const T* _src = reinterpret_cast<const T*>(src);
 
-	if(!CheckHwcalByteFlipper<T>(*_src))
+	if(!CheckHwcalByteFlipper<T>(*_src)) {
+		if(cleanOnFail) {
+			if(sizeof(_dst->Data) == 1) {
+				*reinterpret_cast<u8*>(&_dst->Data) = 0;
+			} else if(sizeof(_dst->Data) >= 2) {
+				*reinterpret_cast<u16*>(&_dst->Data) = 0;
+			}
+		}
 		return false;
+	}
 
 	CAL_COPY<decltype(_dst->Data)>(&_dst->Data, &_src->Data);
 	return true;
 }
 
 template<typename T>
-static bool CAL_COPY_CRCCHECK(void* dst, const void* src) {
+static bool CAL_COPY_CRCCHECK(void* dst, const void* src, bool cleanOnFail) {
 	T* _dst = reinterpret_cast<T*>(dst);
 	const T* _src = reinterpret_cast<const T*>(src);
 
-	if(!CheckHwcalChecksum<T>(*_src))
+	if(!CheckHwcalChecksum<T>(*_src)) {
+		if(cleanOnFail)
+			memset(&_dst->Data, 0, sizeof(_dst->Data));
 		return false;
+	}
 
 	CAL_COPY<decltype(_dst->Data)>(&_dst->Data, &_src->Data);
 	return true;
@@ -210,87 +221,134 @@ static bool CAL_COPY_CRCMAKE_AGING(void* dst, const void* src, u16 agingFlag) {
 	return CAL_COPY_CRCMAKE<T>(dst, src);
 }
 
-bool ManagedHwcal_T::ReadCalIndex(void* ptr, CALIndexes index) const {
+// cfg really never checks if cal read was successful
+// nor really cleans on fail
+bool ManagedHwcal_T::ReadCalIndex(void* ptr, CALIndexes index, bool cleanOnFail) const {
 	bool ret = false;
 
 	switch(index) {
 	case CAL_INDEX_RTCCOMPENSATION:
-		ret = CAL_COPY_FLIPPERCHECK<HWCALRtcCompensation_T>(ptr, Hwcal.Body.RtcCompensation);
+		ret = CAL_COPY_FLIPPERCHECK<HWCALRtcCompensation_T>(ptr, Hwcal.Body.RtcCompensation, cleanOnFail);
 		break;
 	case CAL_INDEX_SCREENFLICKER:
-		ret = CAL_COPY_FLIPPERCHECK<HWCALScreenFlicker_T>(ptr, Hwcal.Body.ScreenFlicker);
+		ret = CAL_COPY_FLIPPERCHECK<HWCALScreenFlicker_T>(ptr, Hwcal.Body.ScreenFlicker, cleanOnFail);
 		break;
 	case CAL_INDEX_OUTERCAMS1:
-		ret = CAL_COPY_CRCCHECK<HWCALOuterCamarasPart1_T>(ptr, Hwcal.Body.OuterCams1);
+		ret = CAL_COPY_CRCCHECK<HWCALOuterCamarasPart1_T>(ptr, Hwcal.Body.OuterCams1, cleanOnFail);
 		break;
 	case CAL_INDEX_TOUCH:
-		ret = CAL_COPY_CRCCHECK<HWCALTouch_T>(ptr, Hwcal.Body.Touch);
+		ret = CAL_COPY_CRCCHECK<HWCALTouch_T>(ptr, Hwcal.Body.Touch, cleanOnFail);
 		break;
 	case CAL_INDEX_CIRCLEPAD1:
-		ret = CAL_COPY_CRCCHECK<HWCALCirclePadPart1_T>(ptr, Hwcal.Body.CirclePad1);
+		ret = CAL_COPY_CRCCHECK<HWCALCirclePadPart1_T>(ptr, Hwcal.Body.CirclePad1, cleanOnFail);
 		break;
 	case CAL_INDEX_CODEC:
-		ret = CAL_COPY_CRCCHECK<HWCALCodec_T>(ptr, Hwcal.Body.Codec);
+		ret = CAL_COPY_CRCCHECK<HWCALCodec_T>(ptr, Hwcal.Body.Codec, cleanOnFail);
 		break;
 	case CAL_INDEX_GYRO:
-		ret = CAL_COPY_CRCCHECK<HWCALGyroscope_T>(ptr, Hwcal.Body.Gyro);
+		ret = CAL_COPY_CRCCHECK<HWCALGyroscope_T>(ptr, Hwcal.Body.Gyro, cleanOnFail);
 		break;
 	case CAL_INDEX_RTCCORRECTION:
-		ret = CAL_COPY_FLIPPERCHECK<HWCALRtcCorrection_T>(ptr, Hwcal.Body.RtcCorrection);
+		ret = CAL_COPY_FLIPPERCHECK<HWCALRtcCorrection_T>(ptr, Hwcal.Body.RtcCorrection, cleanOnFail);
 		break;
 	case CAL_INDEX_ACCELEROMETER:
-		ret = CAL_COPY_CRCCHECK<HWCALAccelerometer_T>(ptr, Hwcal.Body.Accelerometer);
+		ret = CAL_COPY_CRCCHECK<HWCALAccelerometer_T>(ptr, Hwcal.Body.Accelerometer, cleanOnFail);
 		break;
 	case CAL_INDEX_SOUND3DFILTER:
-		ret = CAL_COPY_CRCCHECK<HWCALSound3DFilter_T>(ptr, Hwcal.Body.Sound3DFilter);
+		ret = CAL_COPY_CRCCHECK<HWCALSound3DFilter_T>(ptr, Hwcal.Body.Sound3DFilter, cleanOnFail);
 		break;
 	case CAL_INDEX_LCDPOWERSAVE:
-		ret = CAL_COPY_CRCCHECK<HWCALLcdPowerSave_T>(ptr, Hwcal.Body.LcdPowersave);
+		ret = CAL_COPY_CRCCHECK<HWCALLcdPowerSave_T>(ptr, Hwcal.Body.LcdPowersave, cleanOnFail);
 		break;
 	case CAL_INDEX_LCDSTEREOSCOPIC:
-		ret = CAL_COPY_CRCCHECK<HWCALLcdStereoscopic_T>(ptr, Hwcal.Body.LcdStereoscopic);
+		ret = CAL_COPY_CRCCHECK<HWCALLcdStereoscopic_T>(ptr, Hwcal.Body.LcdStereoscopic, cleanOnFail);
 		break;
 	case CAL_INDEX_BACKLIGHTPWM:
-		ret = CAL_COPY_CRCCHECK<HWCALBacklightPwm_T>(ptr, Hwcal.Body.BlPwn);
+		ret = CAL_COPY_CRCCHECK<HWCALBacklightPwm_T>(ptr, Hwcal.Body.BlPwn, cleanOnFail);
 		break;
 	case CAL_INDEX_CIRCLEPAD2:
-		ret = CAL_COPY_CRCCHECK<HWCALCirclePadPart2_T>(ptr, Hwcal.Body.CirclePad2);
+		ret = CAL_COPY_CRCCHECK<HWCALCirclePadPart2_T>(ptr, Hwcal.Body.CirclePad2, cleanOnFail);
 		break;
 	case CAL_INDEX_OUTERCAMS2:
-		ret = CAL_COPY_CRCCHECK<HWCALOuterCamarasPart2_T>(ptr, Hwcal.Body.OuterCams2);
+		ret = CAL_COPY_CRCCHECK<HWCALOuterCamarasPart2_T>(ptr, Hwcal.Body.OuterCams2, cleanOnFail);
 		break;
 	case CAL_INDEX_LCDPOWERSAVELGY:
-		ret = CAL_COPY_CRCCHECK<HWCALLcdPowerSave_T>(ptr, Hwcal.Body.LcdPowersaveLgy);
+		ret = CAL_COPY_CRCCHECK<HWCALLcdPowerSave_T>(ptr, Hwcal.Body.LcdPowersaveLgy, cleanOnFail);
 		break;
 	case CAL_INDEX_SLIDERS:
-		ret = CAL_COPY_CRCCHECK<HWCALSliders_T>(ptr, Hwcal.Body.Sliders);
+		ret = CAL_COPY_CRCCHECK<HWCALSliders_T>(ptr, Hwcal.Body.Sliders, cleanOnFail);
 		break;
 	case CAL_INDEX_LCDMODEDELAY:
-		ret = CAL_COPY_CRCCHECK<HWCALLcdModeDelay_T>(ptr, Hwcal.Body.LcdModeDelay);
+		ret = CAL_COPY_CRCCHECK<HWCALLcdModeDelay_T>(ptr, Hwcal.Body.LcdModeDelay, cleanOnFail);
 		break;
 	case CAL_INDEX_MICECHOCANCEL:
-		ret = CAL_COPY_CRCCHECK<HWCALMicrophoneEchoCancellation_T>(ptr, Hwcal.Body.MicEchoCancel);
+		ret = CAL_COPY_CRCCHECK<HWCALMicrophoneEchoCancellation_T>(ptr, Hwcal.Body.MicEchoCancel, cleanOnFail);
 		break;
 	case CAL_INDEX_CSTICK:
-		ret = CAL_COPY_CRCCHECK<HWCALCStick_T>(ptr, Hwcal.Body.CStick);
+		ret = CAL_COPY_CRCCHECK<HWCALCStick_T>(ptr, Hwcal.Body.CStick, cleanOnFail);
 		break;
 	case CAL_INDEX_DEADINDEX20:
 		ret = true;
 		break;
 	case CAL_INDEX_LCDPOWERSAVEEXTRA:
-		ret = CAL_COPY_CRCCHECK<HWCALLcdPowerSaveExtra_T>(ptr, Hwcal.Body.LcdPowersaveExtra);
+		ret = CAL_COPY_CRCCHECK<HWCALLcdPowerSaveExtra_T>(ptr, Hwcal.Body.LcdPowersaveExtra, cleanOnFail);
 		break;
 	case CAL_INDEX_PIT:
-		ret = CAL_COPY_CRCCHECK<HWCALPit_T>(ptr, Hwcal.Body.Pit);
+		ret = CAL_COPY_CRCCHECK<HWCALPit_T>(ptr, Hwcal.Body.Pit, cleanOnFail);
 		break;
 	case CAL_INDEX_QTM:
-		ret = CAL_COPY_CRCCHECK<HWCALQtm_T>(ptr, Hwcal.Body.Qtm);
+		ret = CAL_COPY_CRCCHECK<HWCALQtm_T>(ptr, Hwcal.Body.Qtm, cleanOnFail);
 		break;
 	default:
 		break;
 	}
 
 	return ret;
+}
+
+bool ManagedHwcal_T::ReadCalIndexWithDefault(void* ptr, CALIndexes index, const void* defaultValue, u8 minimalRevision) const {
+	static const u16 sizes[CAL_INDEX_COUNT] = {
+		sizeof(HWCALRtcCompensationData_T),
+		sizeof(HWCALScreenFlickerData_T),
+		sizeof(HWCALOuterCamarasPart1Data_T),
+		sizeof(HWCALTouchData_T),
+		sizeof(HWCALCirclePadPart1Data_T),
+		sizeof(HWCALCodecData_T),
+		sizeof(HWCALGyroscopeData_T),
+		sizeof(HWCALRtcCorrectionData_T),
+		sizeof(HWCALAccelerometerData_T),
+		sizeof(HWCALSound3DFilterData_T),
+		sizeof(HWCALLcdPowerSaveData_T),
+		sizeof(HWCALLcdStereoscopicData_T),
+		sizeof(HWCALBacklightPwmData_T),
+		sizeof(HWCALCirclePadPart2Data_T),
+		sizeof(HWCALOuterCamarasPart2Data_T),
+		sizeof(HWCALLcdPowerSaveData_T),
+		sizeof(HWCALSlidersData_T),
+		sizeof(HWCALLcdModeDelayData_T),
+		sizeof(HWCALMicrophoneEchoCancellationData_T),
+		sizeof(HWCALCStickData_T),
+		0,
+		sizeof(HWCALLcdPowerSaveExtraData_T),
+		sizeof(HWCALPitData_T),
+		sizeof(HWCALQtmData_T)
+	};
+
+	if(Hwcal.Header.Revision >= minimalRevision) {
+		bool ret = ReadCalIndex(ptr, index, defaultValue ? false : true);
+		if(ret || !defaultValue) return ret;
+	}
+
+	size_t size = (index <= CAL_INDEX_MAX) ? sizes[index] : 0;
+
+	if(size) {
+		if(defaultValue)
+			memcpy(ptr, defaultValue, size);
+		else
+			memset(ptr, 0, size);
+	}
+
+	return false;
 }
 
 bool ManagedHwcal_T::WriteCalIndex(const void* ptr, CALIndexes index, u16 agingFlag) {
@@ -597,12 +655,8 @@ extern "C" Result Hwcal_ResetCirclePadCfgBlk() {
 void Hwcal_GetCStickNoCheck(ManagedHwcal_T& hwcal, void* ptr) {
 	CStick_T* _ptr = reinterpret_cast<CStick_T*>(ptr);
 
-	if(hwcal.Hwcal.Header.Revision < 15) {
-		memset(ptr, 0, sizeof(CStick_T));
-	} else {
-		hwcal.ReadCalIndex(&_ptr->Data, CAL_INDEX_CSTICK);
-		memset(&_ptr->Unknown[0], 0, sizeofmember(CStick_T, Unknown));
-	}
+	hwcal.ReadCalIndexWithDefault(&_ptr->Data, CAL_INDEX_CSTICK, nullptr, 15);
+	memset(&_ptr->Unknown[0], 0, sizeofmember(CStick_T, Unknown));
 }
 
 static void Hwcal_GetCStickNoCheck(void* ptr) {
@@ -638,15 +692,12 @@ void Hwcal_GetOuterCamsNoCheck(ManagedHwcal_T& hwcal, void* ptr) {
 
 	bool agingPass = hwcal.CheckAgingFlag(CAL_INDEX_OUTERCAMS1);
 
-	if(!agingPass || hwcal.Hwcal.Header.Revision < 2) {
+	if(!agingPass) {
 		memset(&_ptr->Part1, &DummyOuterCams1, sizeof(HWCALOuterCamarasPart1Data_T));
 		memset(&_ptr->Part2, 0, sizeof(HWCALOuterCamarasPart2Data_T));
-	} else if(hwcal.Hwcal.Header.Revision < 4) {
-		hwcal.ReadCalIndex(&_ptr->Part1, CAL_INDEX_OUTERCAMS1);
-		memset(&_ptr->Part2, 0, sizeof(HWCALOuterCamarasPart2Data_T));
 	} else {
-		hwcal.ReadCalIndex(&_ptr->Part1, CAL_INDEX_OUTERCAMS1);
-		hwcal.ReadCalIndex(&_ptr->Part2, CAL_INDEX_OUTERCAMS2);
+		hwcal.ReadCalIndexWithDefault(&_ptr->Part1, CAL_INDEX_OUTERCAMS1, &DummyOuterCams1, 2);
+		hwcal.ReadCalIndexWithDefault(&_ptr->Part2, CAL_INDEX_OUTERCAMS2, nullptr, 4);
 	}
 }
 
@@ -714,11 +765,7 @@ static void Hwcal_GetQtmNoCheck(void* ptr) {
 	ManagedHwcal_T hwcal;
 	hwcal.Load();
 
-	if(hwcal.Hwcal.Header.Revision < 18) {
-		memcpy(ptr, &DefaultQtm, sizeof(HWCALQtmData_T));
-	} else {
-		hwcal.ReadCalIndex(ptr, CAL_INDEX_QTM);
-	}
+	hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_QTM, &DefaultQtm, 18);
 }
 
 extern "C" Result Hwcal_GetQtm(void* ptr, size_t size) {
