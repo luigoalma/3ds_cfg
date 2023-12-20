@@ -41,14 +41,16 @@ static Result Cfg_SetBlk0x160000Byte0(u8 byte) {
 	Result res;
 
 	res = Cfg_System_ReadBlk(&data[0], 0x160000, 4);
-	if(R_SUCCEEDED(res)) {
-		data[0] = byte;
-		res = Cfg_System_WriteBlk(&data[0], 0x160000, 4);
-		if(R_SUCCEEDED(res)) {
-			Cfg_SaveConfig();
-			res = 0;
-		}
-	}
+	if(R_FAILED(res))
+		return res;
+
+	data[0] = byte;
+	res = Cfg_System_WriteBlk(&data[0], 0x160000, 4);
+	if(R_FAILED(res))
+		return res;
+
+	Cfg_SaveConfig();
+	res = 0;
 
 	return res;
 }
@@ -77,7 +79,7 @@ static void Cfg_TranslateCountryInfo(u32* info, u8 left_to_right) {
 static Result Cfg_TransferableId(u64* id, u32 unique_id) {
 	u32 msg[3];
 
-	res = Cfg_System_GetBlkPtr(&msg[0], 0x90001, 8);
+	res = Cfg_System_ReadBlk(&msg[0], 0x90001, 8);
 	if(R_FAILED(res)) {
 		*id = 0;
 		return res;
@@ -140,18 +142,20 @@ static Result Cfg_ResetParentalControls() {
 	Result res;
 
 	res = Cfg_System_GetBlkPtr(&ptr, 0xC0000, 0xC0);
-	if(R_SUCCEEDED(res)) {
-		memset(ptr, 0, 0xC0);
-		((u8*)ptr)[9] = 0x14;
-		res = Cfg_System_GetBlkPtr(&ptr, 0xC0002, 0x200);
-		if(R_SUCCEEDED(res)) {
-			memset(ptr, 0, 0x200);
-			Cfg_SaveConfig();
-			res = 0;
-		}
-	}
+	if(R_FAILED(res))
+		return res;
 
-	return res;
+	memset(ptr, 0, 0xC0);
+	((u8*)ptr)[9] = 0x14;
+
+	res = Cfg_System_GetBlkPtr(&ptr, 0xC0002, 0x200);
+	if(R_FAILED(res))
+		return res;
+
+	memset(ptr, 0, 0x200);
+	Cfg_SaveConfig();
+
+	return 0;
 }
 
 static void CFG_Common_IPCSession(int service_index) {
@@ -632,13 +636,69 @@ static void CFG_IPCSession(int service_index) {
 	}
 }
 
-void TryMountCFGSystemSave() {
-	Result res = 0;
+static void TryMountCFGSystemSave() {
 	for(int i = 0; i < 4; ++i) {
 		if (R_SUCCEEDED(Cfg_OpenSysSave())) {
 			break;
 		}
 	}
+}
+
+// not really sure what to call it
+static void DeriveIds() {
+	void* ptr;
+	u64 transfer_id_base;
+	bool need_save = false;
+
+	if(R_FAILED(Cfg_System_GetBlkPtr(&ptr, 0x90001, 8)))
+		return;
+
+	transfer_id_base = *(u64*)ptr;
+
+	if(transfer_id_base & 0x3FFFFFFFFLL) { // LFCS id part
+
+		if(R_FAILED(Lfcs_GetId(&transfer_id_base)))
+			return;
+
+		u16 random;
+		if(R_SUCCEEDED(psInit())) {
+			PS_GenerateRandomBytes(&random, 2);
+			psExit();
+		}
+		
+		transfer_id_base &= 0x3FFFFFFFFLLU;
+		transfer_id_base |= random << 48;
+
+		*(u64*)ptr = transfer_id_base;
+
+		u32 random32 = random;
+		if(R_FAILED(Cfg_System_WriteBlk(&random32, 0x90002, 4)))
+			return;
+
+		need_save = true;
+	}
+
+	if(R_FAILED(Cfg_System_GetBlkPtr(&ptr, 0x100003, 0x10)))
+		return;
+
+	if(*(u64*)ptr) {
+		if(need_save)
+			Cfg_SaveConfig();
+		return;
+	}
+
+	u64 twl_movable[2];
+	twl_movable[0] = 0x00000000005F5F5F;
+	if(R_SUCCEEDED(psInit())) {
+		PS_GenerateRandomBytes(&((u8*)&twl_movable[0])[3], 5);
+		psExit();
+	}
+	Cfg_TransferableId(&twl_movable[1], 0);
+	((u64*)ptr)[0] = twl_movable[0] ^ 0x85350AADF30EB782LLU;
+	((u64*)ptr)[1] = twl_movable[1] ^ 0x00D506E714AE84AALLU;
+
+	Cfg_SaveConfig();
+	return;
 }
 
 static inline void initBSS() {
@@ -670,7 +730,7 @@ void CFGMain() {
 	SecInfo_Init();
 	// spi!!
 	Cfg_UpgradeSave();
-	// id block generation function needed
+	DeriveIds();
 
 	for (int i = 0; i < SERVICE_COUNT; i++)
 		Err_FailedThrow(srvRegisterService(&session_handles[i + 1], CFG_ServiceNames[i], 25));
