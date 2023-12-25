@@ -4,7 +4,6 @@
 #include <3ds/srv.h>
 #include <3ds/fs.h>
 #include <3ds/ipc.h>
-#include <memops.h>
 
 static Handle fsuHandle;
 static int fsuRefCount;
@@ -107,7 +106,7 @@ Result FSUSER_RenameFile(FS_Archive srcArchive, FS_Path srcPath, FS_Archive dstA
 	cmdbuf[13] = (u32) dstPath.data;
 
 	Result ret = 0;
-	if(R_FAILED(ret = svcSendSyncRequest(fsSessionForArchive(srcArchive)))) return ret;
+	if(R_FAILED(ret = svcSendSyncRequest(fsuHandle))) return ret;
 
 	return cmdbuf[1];
 }
@@ -125,6 +124,64 @@ Result FSUSER_CreateDirectory(FS_Archive archive, FS_Path path, u32 attributes)
 	cmdbuf[6] = attributes;
 	cmdbuf[7] = IPC_Desc_StaticBuffer(path.size, 0);
 	cmdbuf[8] = (u32) path.data;
+
+	Result ret = 0;
+	if(R_FAILED(ret = svcSendSyncRequest(fsuHandle))) return ret;
+
+	return cmdbuf[1];
+}
+
+Result FSUSER_OpenArchive(FS_Archive* archive, FS_ArchiveID id, FS_Path path)
+{
+	if(!archive) return -2;
+
+	u32 *cmdbuf = getThreadCommandBuffer();
+
+	cmdbuf[0] = IPC_MakeHeader(0x80C,3,2); // 0x80C00C2
+	cmdbuf[1] = id;
+	cmdbuf[2] = path.type;
+	cmdbuf[3] = path.size;
+	cmdbuf[4] = IPC_Desc_StaticBuffer(path.size, 0);
+	cmdbuf[5] = (u32) path.data;
+
+	Result ret = 0;
+	if(R_FAILED(ret = svcSendSyncRequest(fsuHandle))) return ret;
+
+	*archive = cmdbuf[2] | ((u64) cmdbuf[3] << 32);
+
+	return cmdbuf[1];
+}
+
+Result FSUSER_ControlArchive(FS_Archive archive, FS_ArchiveAction action, void* input, u32 inputSize, void* output, u32 outputSize)
+{
+	u32 *cmdbuf = getThreadCommandBuffer();
+
+	cmdbuf[0] = IPC_MakeHeader(0x80D,5,4); // 0x80D0144
+	cmdbuf[1] = (u32) archive;
+	cmdbuf[2] = (u32) (archive >> 32);
+	cmdbuf[3] = action;
+	cmdbuf[4] = inputSize;
+	cmdbuf[5] = outputSize;
+	cmdbuf[6] = IPC_Desc_Buffer(inputSize, IPC_BUFFER_R);
+	cmdbuf[7] = (u32) input;
+	cmdbuf[8] = IPC_Desc_Buffer(outputSize, IPC_BUFFER_W);
+	cmdbuf[9] = (u32) output;
+
+	Result ret = 0;
+	if(R_FAILED(ret = svcSendSyncRequest(fsuHandle))) return ret;
+
+	return cmdbuf[1];
+}
+
+Result FSUSER_CloseArchive(FS_Archive archive)
+{
+	if(!archive) return -2;
+
+	u32 *cmdbuf = getThreadCommandBuffer();
+
+	cmdbuf[0] = IPC_MakeHeader(0x80E,2,0); // 0x80E0080
+	cmdbuf[1] = (u32) archive;
+	cmdbuf[2] = (u32) (archive >> 32);
 
 	Result ret = 0;
 	if(R_FAILED(ret = svcSendSyncRequest(fsuHandle))) return ret;

@@ -4,7 +4,6 @@
 #include <3ds/result.h>
 #include <3ds/srv.h>
 #include <3ds/i2c.h>
-#include <memops.h>
 
 Result i2cEEPInit(Handle* i2cEEPHandle)
 {

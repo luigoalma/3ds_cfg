@@ -1,6 +1,6 @@
 #pragma once
 #include <3ds/types.h>
-#include <3ds/os.h>
+#include <3ds/result.h>
 #include <assert.h>
 
 // Result values
@@ -230,3 +230,18 @@ typedef enum PACKED CFG_BlkFlags {
 } CFG_BlkFlags;
 
 static_assert(sizeof(CFG_BlkFlags) == 2);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+Result Cfg_SetBlk0x160000Byte0(u8 byte);
+void Cfg_TranslateCountryInfo(u32* info, u8 left_to_right);
+Result Cfg_TransferableId(u64* id, u32 unique_id);
+Result Cfg_IsCoppacsSupported(bool* support);
+Result Cfg_GetSystemModel(CFG_SystemModel* model);
+Result Cfg_ResetParentalControls();
+
+#ifdef __cplusplus
+}
+#endif
