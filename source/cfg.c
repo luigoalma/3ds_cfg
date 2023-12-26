@@ -1,6 +1,7 @@
 #include <strings.h>
 #include <3ds/types.h>
 #include <storage/config.h>
+#include <storage/secinfo.h>
 #include <cfg.h>
 
 // dunno what this block is yet

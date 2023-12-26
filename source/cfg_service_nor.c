@@ -167,7 +167,42 @@ static Result NOR_SingleWrite(u32 offset, const void* data, size_t dataLen) {
 	return SPI_SendCmdAndWrite(NORHandler.spiHandle, 1, &cmd[0], 4, data, dataLen);
 }
 
+static void NOR_Write(u32 offset, const void* data, size_t dataLen) {
+	const u8* _data = (const u8*)data;
 
+	u8 buf[0x100];
+
+	u32 page_addr = offset & 0xFFFFFF00;
+	u8 page_off = offset & 0xFF;
+
+	size_t buf_left = 256 - page_off;
+
+	size_t size = (dataLen > buf_left) ? buf_left : dataLen;
+	size_t remainder_size = buf_left - size;
+
+	if(page_off)
+		Err_Panic(NOR_SingleRead(page_addr, buf, page_off));
+
+	while(dataLen) {
+		memcpy(&buf[page_off], _data, size);
+
+		if(remainder_size) {
+			u32 remainder_off = 256 - remainder_size;
+			Err_Panic(NOR_SingleRead(page_addr + remainder_off, &buf[remainder_off], remainder_size));
+		}
+
+		Err_Panic(NOR_SingleWrite(page_addr, buf, 256));
+		NOR_WaitForNonBusy();
+
+		page_addr += 256;
+		page_off = 0;
+		_data += size;
+		dataLen -= size;
+
+		size = (dataLen > 256) ? 256 : dataLen;
+		remainder_size = 256 - size;
+	}
+}
 
 void CFG_NOR_IPCSession() {
 	u32* cmdbuf = getThreadCommandBuffer();
@@ -198,7 +233,13 @@ void CFG_NOR_IPCSession() {
 			cmdbuf[0] = IPC_MakeHeader(0x0, 1, 0);
 			cmdbuf[1] = OS_INVALID_IPC_PARAMATER;
 		} else {
+			void* ptr = (void*)cmdbuf[4];
+			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[3]);
 
+			cmdbuf[1] = NOR_SingleRead(cmdbuf[2], ptr, size);
+			cmdbuf[0] = IPC_MakeHeader(0x5, 1, 2);
+			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_W);
+			cmdbuf[3] = (u32)ptr;
 		}
 		break;
 	case 0x6:
@@ -206,7 +247,13 @@ void CFG_NOR_IPCSession() {
 			cmdbuf[0] = IPC_MakeHeader(0x0, 1, 0);
 			cmdbuf[1] = OS_INVALID_IPC_PARAMATER;
 		} else {
+			void* ptr = (void*)cmdbuf[4];
+			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[3]);
 
+			cmdbuf[1] = NOR_Write(cmdbuf[2], ptr, size);
+			cmdbuf[0] = IPC_MakeHeader(0x6, 1, 2);
+			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_R);
+			cmdbuf[3] = (u32)ptr;
 		}
 		break;
 	case 0x7:
