@@ -21,7 +21,7 @@ AccessControlInfo:
   IdealProcessor                : 1
   AffinityMask                  : 2
 
-  Priority                      : 14
+  Priority                      : 20
 
   DisableDebug                  : true
   EnableForceDebug              : false
@@ -79,5 +79,5 @@ SystemControlInfo:
   RemasterVersion: 0
   StackSize: 0x3000
   Dependency:
-    PS: 0x0004013000003202
+    PS: 0x0004013000003102
     SPI: 0x0004013000002302
