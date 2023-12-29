@@ -864,7 +864,7 @@ static_assert(offsetof(HWCALBody_T, BlPwn) == 1184);
 static_assert(offsetof(HWCALBody_T, CirclePad2) == 1248);
 static_assert(offsetof(HWCALBody_T, OuterCams2) == 1280);
 static_assert(offsetof(HWCALBody_T, LcdPowersaveLgy) == 1296);
-static_assert(offsetof(HWCALBody_T, Slider) == 1344);
+static_assert(offsetof(HWCALBody_T, Sliders) == 1344);
 static_assert(offsetof(HWCALBody_T, LcdModeDelay) == 1360);
 static_assert(offsetof(HWCALBody_T, MicEchoCancel) == 1376);
 static_assert(offsetof(HWCALBody_T, LcdPowersaveExtra) == 1392);

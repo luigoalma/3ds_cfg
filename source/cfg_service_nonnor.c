@@ -1,6 +1,7 @@
 #include <3ds/ipc.h>
 #include <3ds/result.h>
 #include <3ds/types.h>
+#include <3ds/svc.h>
 #include <3ds/srv.h>
 #include <cfg.h>
 #include <cfg_service.h>
@@ -8,6 +9,7 @@
 #include <storage/hwcal.h>
 #include <storage/lfcs.h>
 #include <storage/secinfo.h>
+#include "country.h"
 
 void CFG_Common_IPCSession(int service_index) {
 	u32* cmdbuf = getThreadCommandBuffer();
@@ -175,7 +177,7 @@ void CFG_Common_IPCSession(int service_index) {
 			u8 unk = 0;
 			cmdbuf[1] = SecInfo_GetByte0x101(&unk);
 			cmdbuf[0] = IPC_MakeHeader(cmdid, 2, 0);
-			cmdbuf[2] = region;
+			cmdbuf[2] = unk;
 		}
 		break;
 	case 0x408: // cfg:s
@@ -243,7 +245,7 @@ void CFG_Common_IPCSession(int service_index) {
 			const void* ptr = (const void*)cmdbuf[5];
 			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[4]);
 			u32 blk_id = cmdbuf[1];
-			BLK_FLAGS flags = (BLK_FLAGS)(cmdbuf[3] & 0xFFFF);
+			CFG_BlkFlags flags = (CFG_BlkFlags)(cmdbuf[3] & 0xFFFF);
 
 			cmdbuf[1] = Cfg_CreateBlkWithData(ptr, blk_id, size, flags);
 			cmdbuf[0] = IPC_MakeHeader(0x804, 1, 2);
@@ -321,7 +323,7 @@ void CFG_Common_IPCSession(int service_index) {
 		cmdbuf[1] = 0;
 		break;
 	case 0x80E:
-		cmdbuf[1] = Lfcs_CheckSignature()
+		cmdbuf[1] = Lfcs_CheckSignature();
 		cmdbuf[0] = IPC_MakeHeader(0x80E, 1, 0);
 		break;
 	// case 0x80F at case 0x404
@@ -341,7 +343,7 @@ void CFG_Common_IPCSession(int service_index) {
 			cmdbuf[0] = IPC_MakeHeader(0x811, 1, 4);
 			cmdbuf[2] = IPC_Desc_Buffer(datasize, IPC_BUFFER_R);
 			cmdbuf[3] = (u32)data;
-			cmdbuf[4] = IPC_Desc_Buffer(sigdata, IPC_BUFFER_R);
+			cmdbuf[4] = IPC_Desc_Buffer(sigsize, IPC_BUFFER_R);
 			cmdbuf[5] = (u32)sig;
 		}
 		break;

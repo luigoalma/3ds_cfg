@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <cstring>
 #include <3ds/fs.h>
 #include <3ds/os.h>
 #include <3ds/ps.h>
@@ -7,6 +8,7 @@
 #include <err.h>
 #include <storage/secinfo.h>
 #include "storage.hpp"
+#include "managedsignedfile.hpp"
 
 #define SECINFOSIZE 273
 
@@ -32,12 +34,12 @@ static_assert(offsetof(SecInfoData_T, Byte0x101) == 257);
 static_assert(offsetof(SecInfoData_T, Serial) == 258);
 static_assert(alignof(SecInfoData_T) == 1);
 
-static const FS_Path[2] SecInfoPaths = {
+static const FS_Path SecInfoPaths[2] = {
 	{PATH_ASCII, 18, "/sys/SecureInfo_A"},
 	{PATH_ASCII, 18, "/sys/SecureInfo_B"}
 };
 
-static const FS_Path[2] SecInfoInvalidPaths = {
+static const FS_Path SecInfoInvalidPaths[2] = {
 	{PATH_ASCII, 26, "/sys/SecureInfo_A_invalid"},
 	{PATH_ASCII, 26, "/sys/SecureInfo_B_invalid"}
 };
@@ -213,7 +215,7 @@ extern "C" Result SecInfo_CheckSignature() {
 }
 
 extern "C" Result SecInfo_GetSignature(void* sig, size_t size) {
-	if(size < sizeof(Manager.Data.Signature)) // size checks were not originally done
+	if(size < sizeof(ManagedSecInfoFile.Manager.Data.Signature)) // size checks were not originally done
 		return CFG_INVALID_SIZE;
 
 	return ManagedSecInfoFile.GetSignature(sig);
@@ -228,21 +230,21 @@ extern "C" Result SecInfo_GetByte0x101(u8* unk) {
 }
 
 extern "C" Result SecInfo_GetSerialNumber(char* serial, size_t size) {
-	if(size < sizeof(Manager.Data.Serial)) // size checks were not originally done
+	if(size < sizeof(ManagedSecInfoFile.Manager.Data.Serial)) // size checks were not originally done
 		return CFG_INVALID_SIZE;
 
 	return ManagedSecInfoFile.GetSerialNumber(serial);
 }
 
 extern "C" Result SecInfo_GetData(void* data, size_t size) {
-	if(size < sizeof(Manager.Data.SignedData)) // size checks were not originally done
+	if(size < sizeof(ManagedSecInfoFile.Manager.Data.SignedData)) // size checks were not originally done
 		return CFG_INVALID_SIZE;
 
 	return ManagedSecInfoFile.GetData(data);
 }
 
 extern "C" Result SecInfo_SetWholeSecInfo(const void* sig, size_t sigsize, const void* data, size_t datasize) {
-	if(sigsize < sizeof(Manager.Data.Signature) || datasize < sizeof(Manager.Data.SignedData)) // size checks were not originally done
+	if(sigsize < sizeof(ManagedSecInfoFile.Manager.Data.Signature) || datasize < sizeof(ManagedSecInfoFile.Manager.Data.SignedData)) // size checks were not originally done
 		return CFG_INVALID_SIZE;
 
 	return ManagedSecInfoFile.SetWholeSecInfo(sig, data);

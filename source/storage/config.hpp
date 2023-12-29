@@ -44,6 +44,7 @@ union ALIGN(8) ConfigData_T {
 	Result GetBlkPtrForReading(const void*& ptr, u32 blkId, size_t size, CFG_BlkFlags flags);
 	Result GetBlkPtrForWriting(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags flags);
 	Result CreateBlk(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags flags);
+	Result UpdateBlkFlags(u32 blkId, CFG_BlkFlags flags);
 	Result ReadBlk(void* ptr, u32 blkId, size_t size, bool system);
 	Result WriteBlk(const void* ptr, u32 blkId, size_t size, bool system);
 };
@@ -63,7 +64,7 @@ inline ConfigBlkEntry_T* ConfigData_T::FindBlkId(u32 Id) {
 	ConfigBlkEntry_T* ptr = nullptr;
 
 	for(int i = 0; i < TotalEntries; ++i) {
-		if(BlkEntries[i].Id == id) {
+		if(BlkEntries[i].Id == Id) {
 			ptr = &BlkEntries[i];
 		}
 	}

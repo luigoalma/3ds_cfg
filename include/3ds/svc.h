@@ -150,19 +150,6 @@ static inline Result svcReplyAndReceive(s32* index, const Handle* handles, s32 h
 }
 
 /**
- * @brief Gets the current system tick.
- * @return The current system tick.
- */
-static inline u64    svcGetSystemTick(void) {
-	register u32 lo_tick __asm__("r0");
-	register u32 hi_tick __asm__("r1");
-
-	__asm__ volatile ("svc\t0x28" : "=r"(lo_tick), "=r"(hi_tick) : : "r2", "r3", "r12");
-
-    return (((u64)hi_tick) << 32) | lo_tick;
-}
-
-/**
  * @brief Closes a handle.
  * @param handle Handle to close.
  */

@@ -7,6 +7,7 @@
 #include <err.h>
 #include <storage/lfcs.h>
 #include "storage.hpp"
+#include "managedsignedfile.hpp"
 
 #define LFCSSIZE 272
 
@@ -34,12 +35,12 @@ static_assert(offsetof(LfcsData_T, IsDevUnit) == 257);
 static_assert(offsetof(LfcsData_T, Id) == 264);
 static_assert(alignof(LfcsData_T) == 8);
 
-static const FS_Path[2] LfcsPaths = {
+static const FS_Path LfcsPaths[2] = {
 	{PATH_ASCII, 27, "/sys/LocalFriendCodeSeed_A"},
 	{PATH_ASCII, 27, "/sys/LocalFriendCodeSeed_B"}
 };
 
-static const FS_Path[2] LfcsInvalidPaths = {
+static const FS_Path LfcsInvalidPaths[2] = {
 	{PATH_ASCII, 35, "/sys/LocalFriendCodeSeed_A_invalid"},
 	{PATH_ASCII, 35, "/sys/LocalFriendCodeSeed_B_invalid"}
 };
@@ -202,14 +203,15 @@ extern "C" Result Lfcs_GetId(u64* id) {
 }
 
 extern "C" Result Lfcs_GetWholeData(void* data, size_t size) {
-	if(size < sizeof(Manager.Data)) // size checks were not originally done
+	if(size < sizeof(ManagedLfcsFile.Manager.Data)) // size checks were not originally done
 		return CFG_INVALID_SIZE;
 
 	ManagedLfcsFile.GetWholeLfcsNoChecks(data);
+	return 0;
 }
 
 extern "C" Result Lfcs_SetSignature(const void* sig, size_t size) {
-	if(size < sizeof(Manager.Data.Signature)) // size checks were not originally done
+	if(size < sizeof(ManagedLfcsFile.Manager.Data.Signature)) // size checks were not originally done
 		return CFG_INVALID_SIZE;
 
 	return ManagedLfcsFile.SetSignature(sig);
@@ -219,7 +221,7 @@ extern "C" Result Lfcs_SetData(const void* data, size_t size, bool reset_hardcod
 	if(reset_hardcoded)
 		return ManagedLfcsFile.ResetToHardcodedId();
 
-	if(size < sizeof(Manager.Data.SignedData)) // size checks were not originally done
+	if(size < sizeof(ManagedLfcsFile.Manager.Data.SignedData)) // size checks were not originally done
 		return CFG_INVALID_SIZE;
 
 	return ManagedLfcsFile.SetData(data, false); // I guess for IPC data, we dont invalidate signature?

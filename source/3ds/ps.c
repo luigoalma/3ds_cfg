@@ -25,13 +25,13 @@ void psExit(void)
 	psHandle = 0;
 }
 
-Result PS_VerifyRsaSha256(u8 *hash, PS_RSA_Context *ctx, u8 *signature)
+Result PS_VerifyRsaSha256(u8 *hash, const PS_RSA_Context *ctx, u8 *signature)
 {
 	Result ret = 0;
 	u32 *cmdbuf = getThreadCommandBuffer();
 	u32 size;
 
-	size = ctx->rsa_bitsize>>3;
+	size = ctx->rsa_bit_size>>3;
 
 	cmdbuf[0] = IPC_MakeHeader(0x2,9,4); // 0x20244
 	memcpy(&cmdbuf[1], hash, 32);

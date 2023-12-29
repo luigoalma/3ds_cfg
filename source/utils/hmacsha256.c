@@ -35,14 +35,14 @@ void calculate_hmacsha256(const void* ptr, size_t len, void* hmac, const void* k
 	hmacsha256_t ctx;
 	uint32_t data_u32[24];
 
-	hmacsha256_init(ctx, key, keylen);
+	hmacsha256_init(&ctx, key, keylen);
 
 	sha256_update(&ctx.sha256_ctx, ptr, len);
 	sha256_finish(&ctx.sha256_ctx);
 	sha256_hash(&ctx.sha256_ctx, &data_u32[16]);
 
 	for(int i = 0; i < 16; ++i)
-		data_u32[i] = ctx->key_u32[i] ^ 0x5C5C5C5C;
+		data_u32[i] = ctx.key_u32[i] ^ 0x5C5C5C5C;
 
 	sha256_init(&ctx.sha256_ctx);
 	sha256_update(&ctx.sha256_ctx, data_u32, sizeof(data_u32));

@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <cstring>
 #include <3ds/fs.h>
 #include <3ds/i2c.h>
 #include <3ds/os.h>
@@ -8,12 +9,13 @@
 #include <utils/sha256.h>
 #include <utils/hmacsha256.h>
 #include <utils/endian.h>
+#include <utils/crc16.h>
 #include <storage/config.h>
 #include "cfg.h"
 #include "storage.hpp"
 #include "hwcal.hpp"
 
-static const FS_Path[2] HwcalPaths = {
+static const FS_Path HwcalPaths[2] = {
 	{PATH_ASCII, 16, "/sys/HWCAL0.dat"},
 	{PATH_ASCII, 16, "/sys/HWCAL1.dat"}
 };
@@ -66,6 +68,15 @@ static size_t Hwcali2cReadLoop(Handle i2cEEPHandle, void* out, u16 offset, size_
 
 		offset += 0x20;
 		_out += 0x20;
+		total_read += 0x20;
+	}
+
+	if(remainder_bytes) {
+		if(R_SUCCEEDED(I2C_ReadEEPROM(i2cEEPHandle, 14, reinterpret_cast<void*>(_out), offset, remainder_bytes))) {
+			total_read += remainder_bytes;
+		} else {
+			total_read = 0;
+		}
 	}
 
 	return total_read;
@@ -177,23 +188,23 @@ template<typename T>
 static bool CAL_COPY_FLIPPERMAKE(void* dst, const void* src) {
 	T* _dst = reinterpret_cast<T*>(dst);
 
-	if(sizeof(_dst.Data) > 2
-	  || sizeof(_dst.FlippedBytes) > 2
-	  || sizeof(_dst.Data) != sizeof(_dst.FlippedBytes)
-	  || offsetof(T, FlippedBytes) != sizeof(_dst.Data)) {
+	if(sizeof(_dst->Data) > 2
+	  || sizeof(_dst->FlippedBytes) > 2
+	  || sizeof(_dst->Data) != sizeof(_dst->FlippedBytes)
+	  || offsetof(T, FlippedBytes) != sizeof(_dst->Data)) {
 		return false;
 	}
 
-	if(sizeof(_dst.Data) == 1) {
-		u8 data = *reinterpret_cast<const u8*>(&src);
-		u8* ptr1 = reinterpret_cast<u8*>(&_dst);
-		u8* ptr2 = &_dst.FlippedBytes[0];
+	if(sizeof(_dst->Data) == 1) {
+		u8 data = *reinterpret_cast<const u8*>(src);
+		u8* ptr1 = reinterpret_cast<u8*>(&_dst->Data);
+		u8* ptr2 = &_dst->FlippedBytes[0];
 		*ptr1 = data;
 		*ptr2 = data ^ 0xFF;
-	} else if(sizeof(_dst.Data) == 2) {
-		u16 data = *reinterpret_cast<const u16*>(&src);
-		u16* ptr1 = reinterpret_cast<u16*>(&_dst);
-		u16* ptr2 = reinterpret_cast<u16*>(&_dst.FlippedBytes[0]);
+	} else if(sizeof(_dst->Data) == 2) {
+		u16 data = *reinterpret_cast<const u16*>(src);
+		u16* ptr1 = reinterpret_cast<u16*>(&_dst->Data);
+		u16* ptr2 = reinterpret_cast<u16*>(&_dst->FlippedBytes[0]);
 		*ptr1 = data;
 		*ptr2 = data ^ 0xFFFF;
 	}
@@ -204,10 +215,10 @@ static bool CAL_COPY_FLIPPERMAKE(void* dst, const void* src) {
 template<typename T>
 static bool CAL_COPY_CRCMAKE(void* dst, const void* src) {
 	T* _dst = reinterpret_cast<T*>(dst);
-	const decltype(_dst.Data)* _src = reinterpret_cast<const decltype(_dst.Data)*>(src);
+	const decltype(_dst->Data)* _src = reinterpret_cast<const decltype(_dst->Data)*>(src);
 
 	CAL_COPY<decltype(_src)>(&_dst->Data, _src);
-	_dst.Checksum = crc16(0x55AA, dst, offsetof(T, Checksum));
+	_dst->Checksum = crc16(0x55AA, dst, offsetof(T, Checksum));
 
 	return true;
 }
@@ -216,7 +227,7 @@ template<typename T>
 static bool CAL_COPY_CRCMAKE_AGING(void* dst, const void* src, u16 agingFlag) {
 	T* _dst = reinterpret_cast<T*>(dst);
 
-	_dst.AgingFlag |= agingFlag;
+	_dst->AgingFlag |= agingFlag;
 
 	return CAL_COPY_CRCMAKE<T>(dst, src);
 }
@@ -228,76 +239,76 @@ bool ManagedHwcal_T::ReadCalIndex(void* ptr, CALIndexes index, bool cleanOnFail)
 
 	switch(index) {
 	case CAL_INDEX_RTCCOMPENSATION:
-		ret = CAL_COPY_FLIPPERCHECK<HWCALRtcCompensation_T>(ptr, Hwcal.Body.RtcCompensation, cleanOnFail);
+		ret = CAL_COPY_FLIPPERCHECK<HWCALRtcCompensation_T>(ptr, &Hwcal.Body.RtcCompensation, cleanOnFail);
 		break;
 	case CAL_INDEX_SCREENFLICKER:
-		ret = CAL_COPY_FLIPPERCHECK<HWCALScreenFlicker_T>(ptr, Hwcal.Body.ScreenFlicker, cleanOnFail);
+		ret = CAL_COPY_FLIPPERCHECK<HWCALScreenFlicker_T>(ptr, &Hwcal.Body.ScreenFlicker, cleanOnFail);
 		break;
 	case CAL_INDEX_OUTERCAMS1:
-		ret = CAL_COPY_CRCCHECK<HWCALOuterCamarasPart1_T>(ptr, Hwcal.Body.OuterCams1, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALOuterCamarasPart1_T>(ptr, &Hwcal.Body.OuterCams1, cleanOnFail);
 		break;
 	case CAL_INDEX_TOUCH:
-		ret = CAL_COPY_CRCCHECK<HWCALTouch_T>(ptr, Hwcal.Body.Touch, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALTouch_T>(ptr, &Hwcal.Body.Touch, cleanOnFail);
 		break;
 	case CAL_INDEX_CIRCLEPAD1:
-		ret = CAL_COPY_CRCCHECK<HWCALCirclePadPart1_T>(ptr, Hwcal.Body.CirclePad1, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALCirclePadPart1_T>(ptr, &Hwcal.Body.CirclePad1, cleanOnFail);
 		break;
 	case CAL_INDEX_CODEC:
-		ret = CAL_COPY_CRCCHECK<HWCALCodec_T>(ptr, Hwcal.Body.Codec, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALCodec_T>(ptr, &Hwcal.Body.Codec, cleanOnFail);
 		break;
 	case CAL_INDEX_GYRO:
-		ret = CAL_COPY_CRCCHECK<HWCALGyroscope_T>(ptr, Hwcal.Body.Gyro, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALGyroscope_T>(ptr, &Hwcal.Body.Gyro, cleanOnFail);
 		break;
 	case CAL_INDEX_RTCCORRECTION:
-		ret = CAL_COPY_FLIPPERCHECK<HWCALRtcCorrection_T>(ptr, Hwcal.Body.RtcCorrection, cleanOnFail);
+		ret = CAL_COPY_FLIPPERCHECK<HWCALRtcCorrection_T>(ptr, &Hwcal.Body.RtcCorrection, cleanOnFail);
 		break;
 	case CAL_INDEX_ACCELEROMETER:
-		ret = CAL_COPY_CRCCHECK<HWCALAccelerometer_T>(ptr, Hwcal.Body.Accelerometer, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALAccelerometer_T>(ptr, &Hwcal.Body.Accelerometer, cleanOnFail);
 		break;
 	case CAL_INDEX_SOUND3DFILTER:
-		ret = CAL_COPY_CRCCHECK<HWCALSound3DFilter_T>(ptr, Hwcal.Body.Sound3DFilter, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALSound3DFilter_T>(ptr, &Hwcal.Body.Sound3DFilter, cleanOnFail);
 		break;
 	case CAL_INDEX_LCDPOWERSAVE:
-		ret = CAL_COPY_CRCCHECK<HWCALLcdPowerSave_T>(ptr, Hwcal.Body.LcdPowersave, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALLcdPowerSave_T>(ptr, &Hwcal.Body.LcdPowersave, cleanOnFail);
 		break;
 	case CAL_INDEX_LCDSTEREOSCOPIC:
-		ret = CAL_COPY_CRCCHECK<HWCALLcdStereoscopic_T>(ptr, Hwcal.Body.LcdStereoscopic, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALLcdStereoscopic_T>(ptr, &Hwcal.Body.LcdStereoscopic, cleanOnFail);
 		break;
 	case CAL_INDEX_BACKLIGHTPWM:
-		ret = CAL_COPY_CRCCHECK<HWCALBacklightPwm_T>(ptr, Hwcal.Body.BlPwn, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALBacklightPwm_T>(ptr, &Hwcal.Body.BlPwn, cleanOnFail);
 		break;
 	case CAL_INDEX_CIRCLEPAD2:
-		ret = CAL_COPY_CRCCHECK<HWCALCirclePadPart2_T>(ptr, Hwcal.Body.CirclePad2, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALCirclePadPart2_T>(ptr, &Hwcal.Body.CirclePad2, cleanOnFail);
 		break;
 	case CAL_INDEX_OUTERCAMS2:
-		ret = CAL_COPY_CRCCHECK<HWCALOuterCamarasPart2_T>(ptr, Hwcal.Body.OuterCams2, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALOuterCamarasPart2_T>(ptr, &Hwcal.Body.OuterCams2, cleanOnFail);
 		break;
 	case CAL_INDEX_LCDPOWERSAVELGY:
-		ret = CAL_COPY_CRCCHECK<HWCALLcdPowerSave_T>(ptr, Hwcal.Body.LcdPowersaveLgy, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALLcdPowerSave_T>(ptr, &Hwcal.Body.LcdPowersaveLgy, cleanOnFail);
 		break;
 	case CAL_INDEX_SLIDERS:
-		ret = CAL_COPY_CRCCHECK<HWCALSliders_T>(ptr, Hwcal.Body.Sliders, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALSliders_T>(ptr, &Hwcal.Body.Sliders, cleanOnFail);
 		break;
 	case CAL_INDEX_LCDMODEDELAY:
-		ret = CAL_COPY_CRCCHECK<HWCALLcdModeDelay_T>(ptr, Hwcal.Body.LcdModeDelay, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALLcdModeDelay_T>(ptr, &Hwcal.Body.LcdModeDelay, cleanOnFail);
 		break;
 	case CAL_INDEX_MICECHOCANCEL:
-		ret = CAL_COPY_CRCCHECK<HWCALMicrophoneEchoCancellation_T>(ptr, Hwcal.Body.MicEchoCancel, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALMicrophoneEchoCancellation_T>(ptr, &Hwcal.Body.MicEchoCancel, cleanOnFail);
 		break;
 	case CAL_INDEX_CSTICK:
-		ret = CAL_COPY_CRCCHECK<HWCALCStick_T>(ptr, Hwcal.Body.CStick, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALCStick_T>(ptr, &Hwcal.Body.CStick, cleanOnFail);
 		break;
 	case CAL_INDEX_DEADINDEX20:
 		ret = true;
 		break;
 	case CAL_INDEX_LCDPOWERSAVEEXTRA:
-		ret = CAL_COPY_CRCCHECK<HWCALLcdPowerSaveExtra_T>(ptr, Hwcal.Body.LcdPowersaveExtra, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALLcdPowerSaveExtra_T>(ptr, &Hwcal.Body.LcdPowersaveExtra, cleanOnFail);
 		break;
 	case CAL_INDEX_PIT:
-		ret = CAL_COPY_CRCCHECK<HWCALPit_T>(ptr, Hwcal.Body.Pit, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALPit_T>(ptr, &Hwcal.Body.Pit, cleanOnFail);
 		break;
 	case CAL_INDEX_QTM:
-		ret = CAL_COPY_CRCCHECK<HWCALQtm_T>(ptr, Hwcal.Body.Qtm, cleanOnFail);
+		ret = CAL_COPY_CRCCHECK<HWCALQtm_T>(ptr, &Hwcal.Body.Qtm, cleanOnFail);
 		break;
 	default:
 		break;
@@ -356,76 +367,76 @@ bool ManagedHwcal_T::WriteCalIndex(const void* ptr, CALIndexes index, u16 agingF
 
 	switch(index) {
 	case CAL_INDEX_RTCCOMPENSATION:
-		ret = CAL_COPY_FLIPPERMAKE<HWCALRtcCompensation_T>(Hwcal.Body.RtcCompensation, ptr);
+		ret = CAL_COPY_FLIPPERMAKE<HWCALRtcCompensation_T>(&Hwcal.Body.RtcCompensation, ptr);
 		break;
 	case CAL_INDEX_SCREENFLICKER:
-		ret = CAL_COPY_FLIPPERMAKE<HWCALScreenFlicker_T>(Hwcal.Body.ScreenFlicker, ptr);
+		ret = CAL_COPY_FLIPPERMAKE<HWCALScreenFlicker_T>(&Hwcal.Body.ScreenFlicker, ptr);
 		break;
 	case CAL_INDEX_OUTERCAMS1:
-		ret = CAL_COPY_CRCMAKE<HWCALOuterCamarasPart1_T>(Hwcal.Body.OuterCams1, ptr);
+		ret = CAL_COPY_CRCMAKE<HWCALOuterCamarasPart1_T>(&Hwcal.Body.OuterCams1, ptr);
 		break;
 	case CAL_INDEX_TOUCH:
-		ret = CAL_COPY_CRCMAKE<HWCALTouch_T>(Hwcal.Body.Touch, ptr);
+		ret = CAL_COPY_CRCMAKE<HWCALTouch_T>(&Hwcal.Body.Touch, ptr);
 		break;
 	case CAL_INDEX_CIRCLEPAD1:
-		ret = CAL_COPY_CRCMAKE<HWCALCirclePadPart1_T>(Hwcal.Body.CirclePad1, ptr);
+		ret = CAL_COPY_CRCMAKE<HWCALCirclePadPart1_T>(&Hwcal.Body.CirclePad1, ptr);
 		break;
 	case CAL_INDEX_CODEC:
-		ret = CAL_COPY_CRCMAKE<HWCALCodec_T>(Hwcal.Body.Codec, ptr);
+		ret = CAL_COPY_CRCMAKE<HWCALCodec_T>(&Hwcal.Body.Codec, ptr);
 		break;
 	case CAL_INDEX_GYRO:
-		ret = CAL_COPY_CRCMAKE<HWCALGyroscope_T>(Hwcal.Body.Gyro, ptr);
+		ret = CAL_COPY_CRCMAKE<HWCALGyroscope_T>(&Hwcal.Body.Gyro, ptr);
 		break;
 	case CAL_INDEX_RTCCORRECTION:
-		ret = CAL_COPY_FLIPPERMAKE<HWCALRtcCorrection_T>(Hwcal.Body.RtcCorrection, ptr);
+		ret = CAL_COPY_FLIPPERMAKE<HWCALRtcCorrection_T>(&Hwcal.Body.RtcCorrection, ptr);
 		break;
 	case CAL_INDEX_ACCELEROMETER:
-		ret = CAL_COPY_CRCMAKE<HWCALAccelerometer_T>(Hwcal.Body.Accelerometer, ptr);
+		ret = CAL_COPY_CRCMAKE<HWCALAccelerometer_T>(&Hwcal.Body.Accelerometer, ptr);
 		break;
 	case CAL_INDEX_SOUND3DFILTER:
-		ret = CAL_COPY_CRCMAKE<HWCALSound3DFilter_T>(Hwcal.Body.Sound3DFilter, ptr);
+		ret = CAL_COPY_CRCMAKE<HWCALSound3DFilter_T>(&Hwcal.Body.Sound3DFilter, ptr);
 		break;
 	case CAL_INDEX_LCDPOWERSAVE:
-		ret = CAL_COPY_CRCMAKE<HWCALLcdPowerSave_T>(Hwcal.Body.LcdPowersave, ptr);
+		ret = CAL_COPY_CRCMAKE<HWCALLcdPowerSave_T>(&Hwcal.Body.LcdPowersave, ptr);
 		break;
 	case CAL_INDEX_LCDSTEREOSCOPIC:
-		ret = CAL_COPY_CRCMAKE<HWCALLcdStereoscopic_T>(Hwcal.Body.LcdStereoscopic, ptr);
+		ret = CAL_COPY_CRCMAKE<HWCALLcdStereoscopic_T>(&Hwcal.Body.LcdStereoscopic, ptr);
 		break;
 	case CAL_INDEX_BACKLIGHTPWM:
-		ret = CAL_COPY_CRCMAKE<HWCALBacklightPwm_T>(Hwcal.Body.BlPwn, ptr);
+		ret = CAL_COPY_CRCMAKE<HWCALBacklightPwm_T>(&Hwcal.Body.BlPwn, ptr);
 		break;
 	case CAL_INDEX_CIRCLEPAD2:
-		ret = CAL_COPY_CRCMAKE<HWCALCirclePadPart2_T>(Hwcal.Body.CirclePad2, ptr);
+		ret = CAL_COPY_CRCMAKE<HWCALCirclePadPart2_T>(&Hwcal.Body.CirclePad2, ptr);
 		break;
 	case CAL_INDEX_OUTERCAMS2:
-		ret = CAL_COPY_CRCMAKE<HWCALOuterCamarasPart2_T>(Hwcal.Body.OuterCams2, ptr);
+		ret = CAL_COPY_CRCMAKE<HWCALOuterCamarasPart2_T>(&Hwcal.Body.OuterCams2, ptr);
 		break;
 	case CAL_INDEX_LCDPOWERSAVELGY:
-		ret = CAL_COPY_CRCMAKE<HWCALLcdPowerSave_T>(Hwcal.Body.LcdPowersaveLgy, ptr);
+		ret = CAL_COPY_CRCMAKE<HWCALLcdPowerSave_T>(&Hwcal.Body.LcdPowersaveLgy, ptr);
 		break;
 	case CAL_INDEX_SLIDERS:
-		ret = CAL_COPY_CRCMAKE_AGING<HWCALSliders_T>(Hwcal.Body.Sliders, ptr, agingFlag);
+		ret = CAL_COPY_CRCMAKE_AGING<HWCALSliders_T>(&Hwcal.Body.Sliders, ptr, agingFlag);
 		break;
 	case CAL_INDEX_LCDMODEDELAY:
-		ret = CAL_COPY_CRCMAKE_AGING<HWCALLcdModeDelay_T>(Hwcal.Body.LcdModeDelay, ptr, agingFlag);
+		ret = CAL_COPY_CRCMAKE_AGING<HWCALLcdModeDelay_T>(&Hwcal.Body.LcdModeDelay, ptr, agingFlag);
 		break;
 	case CAL_INDEX_MICECHOCANCEL:
-		ret = CAL_COPY_CRCMAKE_AGING<HWCALMicrophoneEchoCancellation_T>(Hwcal.Body.MicEchoCancel, ptr, agingFlag);
+		ret = CAL_COPY_CRCMAKE_AGING<HWCALMicrophoneEchoCancellation_T>(&Hwcal.Body.MicEchoCancel, ptr, agingFlag);
 		break;
 	case CAL_INDEX_CSTICK:
-		ret = CAL_COPY_CRCMAKE_AGING<HWCALCStick_T>(Hwcal.Body.CStick, ptr, agingFlag);
+		ret = CAL_COPY_CRCMAKE_AGING<HWCALCStick_T>(&Hwcal.Body.CStick, ptr, agingFlag);
 		break;
 	case CAL_INDEX_DEADINDEX20:
 		ret = true;
 		break;
 	case CAL_INDEX_LCDPOWERSAVEEXTRA:
-		ret = CAL_COPY_CRCMAKE_AGING<HWCALLcdPowerSaveExtra_T>(Hwcal.Body.LcdPowersaveExtra, ptr, agingFlag);
+		ret = CAL_COPY_CRCMAKE_AGING<HWCALLcdPowerSaveExtra_T>(&Hwcal.Body.LcdPowersaveExtra, ptr, agingFlag);
 		break;
 	case CAL_INDEX_PIT:
-		ret = CAL_COPY_CRCMAKE_AGING<HWCALPit_T>(Hwcal.Body.Pit, ptr, agingFlag);
+		ret = CAL_COPY_CRCMAKE_AGING<HWCALPit_T>(&Hwcal.Body.Pit, ptr, agingFlag);
 		break;
 	case CAL_INDEX_QTM:
-		ret = CAL_COPY_CRCMAKE_AGING<HWCALQtm_T>(Hwcal.Body.Qtm, ptr, agingFlag);
+		ret = CAL_COPY_CRCMAKE_AGING<HWCALQtm_T>(&Hwcal.Body.Qtm, ptr, agingFlag);
 		break;
 	default:
 		break;
@@ -440,7 +451,7 @@ bool ManagedHwcal_T::WriteCalIndex(const void* ptr, CALIndexes index, u16 agingF
 }
 
 void ManagedHwcal_T::GenerateDummyHeader() {
-	Hwcal.Header.Magic = getbe32(0x4343414C) // 'CCAL'
+	Hwcal.Header.Magic = getbe32(0x4343414C); // 'CCAL'
 	Hwcal.Header.Version = 18;
 	Hwcal.Header.DataSize = sizeof(HWCALBody_T);
 	Hwcal.Header.ModelVersion = 0;
@@ -455,11 +466,11 @@ void ManagedHwcal_T::GenerateDummyHeader() {
 
 void ManagedHwcal_T::GenerateDummy() {
 	union {
-		HWCALGyroscopeData_T a,
-		HWCALRtcCorrectionData_T b,
-		HWCALOuterCamarasPart2Data_T c,
-		HWCALCStickData_T d,
-		HWCALLcdPowerSaveExtraData_T e
+		HWCALGyroscopeData_T a;
+		HWCALRtcCorrectionData_T b;
+		HWCALOuterCamarasPart2Data_T c;
+		HWCALCStickData_T d;
+		HWCALLcdPowerSaveExtraData_T e;
 	} dummies;
 
 	memset(&Hwcal, 0, sizeof(HWCAL_T));
@@ -504,7 +515,7 @@ bool ManagedHwcal_T::WriteDummy(int index) {
 
 	res = FSUSER_OpenFile(&file, ::NandAccess::NandROFSArchive, HwcalPaths[index], FS_OPEN_WRITE | FS_OPEN_CREATE, 0);
 	if(R_SUCCEEDED(res)) res = FSFILE_SetSize(file, sizeof(HWCAL_T));
-	if(R_SUCCEEDED(res)) res = FSFILE_Write(file, &filesize, 0LLU, &Hwcal, sizeof(HWCAL_T));
+	if(R_SUCCEEDED(res)) res = FSFILE_Write(file, &filesize, 0LLU, &Hwcal, sizeof(HWCAL_T), FS_WRITE_FLUSH);
 	if(R_SUCCEEDED(res) && filesize == sizeof(HWCAL_T)) ret = true;
 
 	FSFILE_Close(file);
@@ -516,8 +527,6 @@ bool ManagedHwcal_T::WriteDummy(int index) {
 bool ManagedHwcal_T::CheckHeaderAndHash() const {
 	if(getbe32(Hwcal.Header.Magic) != 0x4343414C) // 'CCAL'
 		return false;
-
-	u8 hash[SHA256_HASH_LENGTH];
 
 	if(SystemIsDev || SystemUsesEEP) {
 		u8 hash[SHA256_HASH_LENGTH];
@@ -628,7 +637,7 @@ static void Hwcal_GetCirclePadNoCheck(void* ptr) {
 	ManagedHwcal_T hwcal;
 	hwcal.Load();
 
-	Hwcal_GetCirclePadNoCheck(hwcal, ptr)
+	Hwcal_GetCirclePadNoCheck(hwcal, ptr);
 }
 
 extern "C" Result Hwcal_GetCirclePad(void* ptr, size_t size) {
@@ -693,7 +702,7 @@ void Hwcal_GetOuterCamsNoCheck(ManagedHwcal_T& hwcal, void* ptr) {
 	bool agingPass = hwcal.CheckAgingFlag(CAL_INDEX_OUTERCAMS1);
 
 	if(!agingPass) {
-		memset(&_ptr->Part1, &DummyOuterCams1, sizeof(HWCALOuterCamarasPart1Data_T));
+		memcpy(&_ptr->Part1, &DummyOuterCams1, sizeof(HWCALOuterCamarasPart1Data_T));
 		memset(&_ptr->Part2, 0, sizeof(HWCALOuterCamarasPart2Data_T));
 	} else {
 		hwcal.ReadCalIndexWithDefault(&_ptr->Part1, CAL_INDEX_OUTERCAMS1, &DummyOuterCams1, 2);

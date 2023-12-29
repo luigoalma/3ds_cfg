@@ -1,7 +1,9 @@
-#include <strings.h>
+#include <string.h>
 #include <3ds/types.h>
 #include <storage/config.h>
 #include <storage/secinfo.h>
+#include <utils/sha256.h>
+#include <utils/endian.h>
 #include <cfg.h>
 
 // dunno what this block is yet
@@ -48,7 +50,7 @@ void Cfg_TranslateCountryInfo(u32* info, u8 left_to_right) {
 Result Cfg_TransferableId(u64* id, u32 unique_id) {
 	u32 msg[3];
 
-	res = Cfg_System_ReadBlk(&msg[0], 0x90001, 8);
+	Result res = Cfg_System_ReadBlk(&msg[0], 0x90001, 8);
 	if(R_FAILED(res)) {
 		*id = 0;
 		return res;
@@ -95,7 +97,7 @@ Result Cfg_GetSystemModel(CFG_SystemModel* model) {
 
 	if(_model == CFG_MODEL_2DS) {
 		if(R_SUCCEEDED(SecInfo_GetSerialNumber(serial, sizeof(serial)))) {
-			if(serial[0] != 'A' && serial != 'P') {
+			if(serial[0] != 'A' && serial[0] != 'P') {
 				*model = CFG_MODEL_3DS;
 				return CFG_BAD_MODEL_CHECK;
 			}

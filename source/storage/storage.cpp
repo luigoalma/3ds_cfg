@@ -9,21 +9,21 @@
 namespace SystemSave {
 	FS_Archive NormalFSArchive = 0LLU;
 	FS_Archive FixDataFSArchive = 0LLU;
-	const static FS_SystemSaveDataInfo NormalFSInfo = {MEDIATYPE_NAND, 0, 0, 0x10017};
-	const static FS_SystemSaveDataInfo FixDataFSInfo = {MEDIATYPE_NAND, 1, 0, 0x10017};
-	const static FS_Path NormalFSPath = {PATH_BINARY, sizeof(NormalFSInfo), reinterpret_cast<const void*>(&NormalFSInfo)};
-	const static FS_Path FixDataFSPath = {PATH_BINARY, sizeof(FixDataFSInfo), reinterpret_cast<const void*>(&FixDataFSInfo)};
+	const FS_SystemSaveDataInfo NormalFSInfo = {MEDIATYPE_NAND, 0, 0, 0x10017};
+	const FS_SystemSaveDataInfo FixDataFSInfo = {MEDIATYPE_NAND, 1, 0, 0x10017};
+	const FS_Path NormalFSPath = {PATH_BINARY, sizeof(NormalFSInfo), reinterpret_cast<const void*>(&NormalFSInfo)};
+	const FS_Path FixDataFSPath = {PATH_BINARY, sizeof(FixDataFSInfo), reinterpret_cast<const void*>(&FixDataFSInfo)};
 
-	Result Create(FS_SystemSaveDataInfo& FSInfo) {
+	Result Create(const FS_SystemSaveDataInfo& FSInfo) {
 		// Same creation parameters for both normal syssave and fixdata syssave
 		return FSUSER_CreateSystemSaveData(FSInfo, 0x40000, 0x1000, 10, 10, 11, 11, true);
 	}
 
-	Result Delete(FS_SystemSaveDataInfo& FSInfo) {
+	Result Delete(const FS_SystemSaveDataInfo& FSInfo) {
 		return FSUSER_DeleteSystemSaveData(FSInfo);
 	}
 
-	Result SimpleOpen(FS_Archive& FSArchive, FS_Path& FSPath) {
+	Result SimpleOpen(FS_Archive& FSArchive, const FS_Path& FSPath) {
 		return FSUSER_OpenArchive(&FSArchive, ARCHIVE_SYSTEM_SAVEDATA, FSPath);
 	}
 
@@ -34,7 +34,7 @@ namespace SystemSave {
 		return res;
 	}
 
-	Result Format(FS_Archive& FSArchive, FS_SystemSaveDataInfo& FSInfo, FS_Path& FSPath) {
+	Result Format(FS_Archive& FSArchive, const FS_SystemSaveDataInfo& FSInfo, const FS_Path& FSPath) {
 		Close(FSArchive);
 		Result res = Delete(FSInfo);
 		if(R_FAILED(res) && !R_MODULEDESCRANGE(res, RM_FS, 100, 179)) return res;
@@ -63,6 +63,7 @@ namespace SystemSave {
 		if(R_SUCCEEDED(res)) return res;
 		if(!R_MODULEDESCRANGE(res, RM_FS, 100, 179)) {
 			Delete(FixDataFSInfo); // no check
+		}
 		if(R_FAILED(res = Create(FixDataFSInfo))) return res;
 		if(R_FAILED(res = SimpleOpen(FixDataFSArchive, FixDataFSPath))) {
 			Delete(FixDataFSInfo); // no check

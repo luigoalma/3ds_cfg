@@ -4,6 +4,7 @@
  */
 #pragma once
 #include "types.h"
+#include "svc.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -40,6 +40,8 @@ AccessControlInfo:
   MemoryType                    : Base      # Application / System / Base
   HandleTableSize: 0
 
+  SystemSaveDataId1: 0x10017
+
   MemoryMapping:
     # none needed
 
@@ -51,7 +53,6 @@ AccessControlInfo:
     ExitProcess: 3
     SleepThread: 10
     CloseHandle: 35
-    GetSystemTick: 40
     ConnectToPort: 45
     SendSyncRequest: 50
     GetProcessId: 53
@@ -75,7 +76,6 @@ AccessControlInfo:
 
 SystemControlInfo:
   SaveDataSize: 0KB # It doesn't use any normal save data.
-  SystemSaveDataId1: 0x10017
   RemasterVersion: 0
   StackSize: 0x3000
   Dependency:

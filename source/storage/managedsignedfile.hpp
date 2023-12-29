@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include <cstring>
 #include <3ds/fs.h>
 #include <3ds/os.h>
 #include <3ds/ps.h>
@@ -20,7 +21,7 @@ struct ManagedSignedFile_T {
 
 	bool HasDefinedOverride();
 	Result CheckSignature();
-	bool OpenDeleteFail(Handle& file, FS_Path& rwNandPath);
+	bool OpenDeleteFail(Handle& file, const FS_Path& rwNandPath);
 	void Init();
 	void SaveToNextSlot();
 };
@@ -38,7 +39,7 @@ inline Result ManagedSignedFile_T<T,Paths,InvalidPaths,PathCount,OverridePath,Ov
 	ALIGN(4) u8 hash[SHA256_HASH_LENGTH];
 	sha256_full(Data.SignedData, sizeof(Data.SignedData), hash);
 
-	PS_RSA_Context* ctx = &RsaPair[osEnvInfoIsDev() ? 1 : 0];
+	const PS_RSA_Context* ctx = &RsaPair[osEnvInfoIsDev() ? 1 : 0];
 	Result res = psInit();
 	if(R_SUCCEEDED(res)) {
 		res = PS_VerifyRsaSha256(hash, ctx, Data.Signature);
@@ -51,7 +52,7 @@ inline Result ManagedSignedFile_T<T,Paths,InvalidPaths,PathCount,OverridePath,Ov
 }
 
 template<typename T, const FS_Path* Paths, const FS_Path* InvalidPaths, int PathCount, const FS_Path* OverridePath, const FS_Path* OverridePathTemp, const PS_RSA_Context RsaPair[2]>
-inline bool ManagedSignedFile_T<T,Paths,InvalidPaths,PathCount,OverridePath,OverridePathTemp,RsaPair>::OpenDeleteFail(Handle& file, FS_Path& rwNandPath) {
+inline bool ManagedSignedFile_T<T,Paths,InvalidPaths,PathCount,OverridePath,OverridePathTemp,RsaPair>::OpenDeleteFail(Handle& file, const FS_Path& rwNandPath) {
 	file = 0;
 
 	Result res = FSUSER_OpenFile(&file, ::NandAccess::NandRWFSArchive, rwNandPath, FS_OPEN_READ, 0);
@@ -76,7 +77,7 @@ inline void ManagedSignedFile_T<T,Paths,InvalidPaths,PathCount,OverridePath,Over
 	u32 filesize = 0;
 
 	if(HasDefinedOverride()) {
-		Result res = FSUSER_OpenFile(&file, ::NandAccess::NandRWFSArchive, OverridePath, FS_OPEN_READ, 0);
+		Result res = FSUSER_OpenFile(&file, ::NandAccess::NandRWFSArchive, *OverridePath, FS_OPEN_READ, 0);
 		if(R_SUCCEEDED(res)) res = FSFILE_Read(file, &filesize, 0LLU, &Data.Raw[0], sizeof(T));
 
 		FSFILE_Close(file);
@@ -130,6 +131,7 @@ template<typename T, const FS_Path* Paths, const FS_Path* InvalidPaths, int Path
 inline void ManagedSignedFile_T<T,Paths,InvalidPaths,PathCount,OverridePath,OverridePathTemp,RsaPair>::SaveToNextSlot() {
 	const FS_Path* target = nullptr;
 	Handle file = 0;
+	u32 filesize = 0;
 
 	int last_index = Index;
 	Index = (++Index >= PathCount) ? 0 : Index;
@@ -164,10 +166,10 @@ inline void ManagedSignedFile_T<T,Paths,InvalidPaths,PathCount,OverridePath,Over
 		}
 	} else {
 		if(R_SUCCEEDED(res) && filesize == sizeof(T)) {
-			FSUSER_DeleteFile(::NandAccess::NandRWFSArchive, OverridePath);
-			FSUSER_RenameFile(::NandAccess::NandRWFSArchive, OverridePathTemp, ::NandAccess::NandRWFSArchive, OverridePath);
+			FSUSER_DeleteFile(::NandAccess::NandRWFSArchive, *OverridePath);
+			FSUSER_RenameFile(::NandAccess::NandRWFSArchive, *OverridePathTemp, ::NandAccess::NandRWFSArchive, *OverridePath);
 		} else {
-			FSUSER_DeleteFile(::NandAccess::NandRWFSArchive, OverridePathTemp);
+			FSUSER_DeleteFile(::NandAccess::NandRWFSArchive, *OverridePathTemp);
 		}
 	}
 }

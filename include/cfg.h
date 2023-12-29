@@ -34,7 +34,7 @@ typedef enum
 	CFG_REGION_TWN = 6, ///< Taiwan
 } CFG_Region;
 
-enum PACKED CFG_CountryCode {
+typedef enum {
 	CFG_COUNTRY_JP = 1,   // Japan
 	CFG_COUNTRY_AI = 8,   // Anguilla
 	CFG_COUNTRY_AG = 9,   // Antigua and Barbuda
@@ -171,7 +171,7 @@ enum PACKED CFG_CountryCode {
 	CFG_COUNTRY_MAX = 186,
 	CFG_COUNTRY_INVALID = 255,
 	CFG_COUNTRY_16BIT = 0xFFFF // dummy to make this 16 bit
-};
+} PACKED CFG_CountryCode;
 
 static_assert(sizeof(CFG_CountryCode) == 2);
 
@@ -193,7 +193,7 @@ typedef enum
 } CFG_Language;
 
 // Configuration system model values.
-typedef PACKED enum
+typedef enum
 {
 	CFG_MODEL_3DS    = 0, ///< Old 3DS (CTR)
 	CFG_MODEL_3DSXL  = 1, ///< Old 3DS XL (SPR)
@@ -201,11 +201,11 @@ typedef PACKED enum
 	CFG_MODEL_2DS    = 3, ///< Old 2DS (FTR)
 	CFG_MODEL_N3DSXL = 4, ///< New 3DS XL (RED)
 	CFG_MODEL_N2DSXL = 5, ///< New 2DS XL (JAN)
-} CFG_SystemModel;
+} PACKED CFG_SystemModel;
 
 static_assert(sizeof(CFG_SystemModel) == 1);
 
-typedef enum PACKED CFG_BlkFlags {
+typedef enum {
 	BLK_USER_WRITE_PERM = 0x1, // although, this isn't in normal cases allowed, but write functions check this bit as if its real, so I take it to assumption
 	BLK_USER_READ_PERM = 0x2,
 
@@ -227,7 +227,7 @@ typedef enum PACKED CFG_BlkFlags {
 	BLK_ALL_PERM_BITMASK = BLK_SYSTEM_ALL_PERM | BLK_USER_ALL_PERM,
 
 	BLK_MAX_16BIT = 0xFFFF // force 16bit
-} CFG_BlkFlags;
+} PACKED CFG_BlkFlags;
 
 static_assert(sizeof(CFG_BlkFlags) == 2);
 

@@ -1,7 +1,10 @@
+#include <string.h>
 #include <3ds/result.h>
 #include <3ds/types.h>
 #include <3ds/svc.h>
 #include <3ds/srv.h>
+#include <3ds/fs.h>
+#include <3ds/ps.h>
 #include <cfg.h>
 #include <cfg_service.h>
 #include <err.h>
@@ -131,7 +134,7 @@ void CFGMain() {
 	Cfg_AtBootConfigLoad();
 	Lfcs_Init();
 	SecInfo_Init();
-	NOR_FirstInitialize();
+	NOR_ServiceInit();
 	Cfg_UpgradeSave();
 	DeriveIds();
 

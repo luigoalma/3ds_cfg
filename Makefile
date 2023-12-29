@@ -18,7 +18,7 @@ include $(DEVKITARM)/3ds_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source source/3ds
+SOURCES		:=	source source/3ds source/utils source/storage
 DATA		:=	
 INCLUDES	:=	include
 
@@ -28,7 +28,7 @@ INCLUDES	:=	include
 ARCH	:=	-march=armv6k -mtune=mpcore -mfloat-abi=soft -mtp=soft
 DEFINES :=	-DARM11 -D_3DS
 
-CFLAGS	:=	-g -std=gnu11 -Wall -Wextra -Werror -Wno-unused-value -Os -flto -mword-relocations \
+CFLAGS	:=	-g -Wall -Wextra -Werror -Wno-unused-value -Os -flto -mword-relocations \
 			-fomit-frame-pointer -ffunction-sections -fdata-sections \
 			-fno-exceptions -fno-ident -fno-unwind-tables -fno-asynchronous-unwind-tables \
 			-fno-tree-loop-distribute-patterns \
@@ -37,6 +37,8 @@ CFLAGS	:=	-g -std=gnu11 -Wall -Wextra -Werror -Wno-unused-value -Os -flto -mword
 CFLAGS	+=	$(INCLUDE)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
+
+CFLAGS	+=	-std=gnu11
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=3dsx.specs -nostartfiles -nostdlib \

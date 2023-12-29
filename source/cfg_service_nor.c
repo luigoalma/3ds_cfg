@@ -1,6 +1,9 @@
+#include <string.h>
 #include <3ds/ipc.h>
 #include <3ds/types.h>
+#include <3ds/svc.h>
 #include <3ds/spi.h>
+#include <err.h>
 #include <cfg.h>
 #include <cfg_service.h>
 
@@ -106,11 +109,11 @@ static bool NOR_GetWritableState() {
 	return (rdsr & 0x2) ? true : false;
 }
 
-static bool NOR_WaitForNonBusy() {
+static void NOR_WaitForNonBusy() {
 	while(NOR_GetBusyState()) {}
 }
 
-static bool NOR_WaitForWritable() {
+static void NOR_WaitForWritable() {
 	while(!NOR_GetWritableState()) {}
 }
 
@@ -250,8 +253,9 @@ void CFG_NOR_IPCSession() {
 			void* ptr = (void*)cmdbuf[4];
 			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[3]);
 
-			cmdbuf[1] = NOR_Write(cmdbuf[2], ptr, size);
+			NOR_Write(cmdbuf[2], ptr, size);
 			cmdbuf[0] = IPC_MakeHeader(0x6, 1, 2);
+			cmdbuf[1] = 0;
 			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_R);
 			cmdbuf[3] = (u32)ptr;
 		}
@@ -265,7 +269,7 @@ void CFG_NOR_IPCSession() {
 		cmdbuf[0] = IPC_MakeHeader(0x8, 1, 0);
 		break;
 	case 0x9:
-		cmdbuf[1] = NOR_GetRDIDChipID(&cmdbuf[2]);
+		cmdbuf[1] = NOR_GetRDIDChipID((u8*)&cmdbuf[2]);
 		cmdbuf[0] = IPC_MakeHeader(0x9, 2, 0);
 		break;
 	case 0xA:
@@ -289,7 +293,7 @@ void CFG_NOR_IPCSession() {
 		cmdbuf[1] = 0;
 		break;
 	case 0xE:
-		cmdbuf[1] = NOR_GetRDSR(&cmdbuf[2]);
+		cmdbuf[1] = NOR_GetRDSR((u8*)&cmdbuf[2]);
 		cmdbuf[0] = IPC_MakeHeader(0xE, 2, 0);
 		break;
 	case 0xF:

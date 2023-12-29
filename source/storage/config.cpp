@@ -1,10 +1,12 @@
 #include <cstddef>
+#include <cstring>
 #include <3ds/errf.h>
 #include <3ds/fs.h>
 #include <3ds/result.h>
 #include <3ds/srv.h>
 #include <3ds/svc.h>
 #include <3ds/types.h>
+#include <3ds/os.h>
 #include <cfg.h>
 #include <err.h>
 #include <storage/secinfo.h>
@@ -37,7 +39,7 @@ extern "C" void Cfg_OpenNandAccess() {
 }
 
 extern "C" void Cfg_DeleteFixData() {
-	Err_FailedThrow(::SystemSave::Delete(::SystemSave::FixDataFSInfo))
+	Err_FailedThrow(::SystemSave::Delete(::SystemSave::FixDataFSInfo));
 }
 
 // Comment note: comment written September 23rd, 2023
@@ -155,16 +157,16 @@ void ConfigData_T::SaveFixData() const {
 
 bool ConfigData_T::LoadFixData() {
 	Handle file = 0;
-	u32 filesize = 0;
 	Result res = 0;
 	bool pass = false;
 
-	if(R_FAILED(::SystemSave::SimpleOpen(FixDataFSArchive, FixDataFSPath)))
+	if(R_FAILED(::SystemSave::SimpleOpen(::SystemSave::FixDataFSArchive, ::SystemSave::FixDataFSPath)))
 		return false;
 
-	res = FSUSER_OpenFile(&file, ::SystemSave::FixDataFSArchive, ConfigPath, FS_OPEN_READ, 0)
+	res = FSUSER_OpenFile(&file, ::SystemSave::FixDataFSArchive, ConfigPath, FS_OPEN_READ, 0);
 
 	if(R_SUCCEEDED(res)) {
+		u32 filesize = 0;
 		res = FSFILE_Read(file, &filesize, 0LLU, &Raw[0], CONFIGSIZE);
 
 		FSFILE_Close(file);
@@ -220,11 +222,14 @@ Result ConfigData_T::GetBlkPtr(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags 
 }
 
 Result ConfigData_T::GetBlkPtrForReading(const void*& ptr, u32 blkId, size_t size, CFG_BlkFlags accessFlags) {
-	return GetBlkPtr(ptr, blkId, size, accessFlags, BLK_READ_PERM_BITMASK);
+	void* _ptr = nullptr;
+	Result res = GetBlkPtr(_ptr, blkId, size, accessFlags, BLK_READ_PERM_BITMASK);
+	ptr = _ptr;
+	return res;
 }
 
 Result ConfigData_T::GetBlkPtrForWriting(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags accessFlags) {
-	return GetBlkPtr(ptr, blkId, size, accessFlags, BLK_READ_WRITE_BITMASK);
+	return GetBlkPtr(ptr, blkId, size, accessFlags, BLK_WRITE_PERM_BITMASK);
 }
 
 Result ConfigData_T::CreateBlk(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags flags) {
@@ -271,7 +276,7 @@ Result ConfigData_T::UpdateBlkFlags(u32 blkId, CFG_BlkFlags flags) {
 Result ConfigData_T::ReadBlk(void* ptr, u32 blkId, size_t size, bool system) {
 	const void* _ptr;
 
-	Result res = ConfigSave.GetBlkPtrForReading(_ptr, blkId, size, system ? BLK_SYSTEM_READ_PERM : BLK_USER_READ_PERM);
+	Result res = GetBlkPtrForReading(_ptr, blkId, size, system ? BLK_SYSTEM_READ_PERM : BLK_USER_READ_PERM);
 	if(R_FAILED(res)) return res;
 
 	if(size == 4 && (reinterpret_cast<uptr>(ptr) & 0x3) == 0) { // size 4, aligned by 4 
@@ -295,7 +300,7 @@ Result ConfigData_T::ReadBlk(void* ptr, u32 blkId, size_t size, bool system) {
 Result ConfigData_T::WriteBlk(const void* ptr, u32 blkId, size_t size, bool system) {
 	void* _ptr;
 
-	Result res = ConfigSave.GetBlkPtrForWriting(_ptr, blkId, size, system ? BLK_SYSTEM_WRITE_PERM : BLK_USER_WRITE_PERM);
+	Result res = GetBlkPtrForWriting(_ptr, blkId, size, system ? BLK_SYSTEM_WRITE_PERM : BLK_USER_WRITE_PERM);
 	if(R_FAILED(res)) return res;
 
 	// returned blk pointer for size <= 4 should be always 4 byte aligned with a space of 4 bytes
@@ -383,7 +388,7 @@ static void Cfg_CreateHwcalBlks() {
 	if(hwcal.CheckAgingFlag(CAL_INDEX_ACCELEROMETER)) {
 		hwcal.ReadCalIndexWithDefault(ptr6, CAL_INDEX_ACCELEROMETER, &DummyAccelerometer);
 	} else {
-		memcpy(ptr6, DummyAccelerometer, sizeof(HWCALAccelerometerData_T));
+		memcpy(ptr6, &DummyAccelerometer, sizeof(HWCALAccelerometerData_T));
 	}
 	Hwcal_GetOuterCamsNoCheck(hwcal, ptr7);
 	Hwcal_GetCirclePadNoCheck(hwcal, ptr8);
@@ -524,7 +529,7 @@ static void Cfg_CreateNormalBlks() {
 	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xF0005,  4,     BLK_RW_SYSTEM));
 	*reinterpret_cast<u32*>(ptr) = 1;
 	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xF0006,  0x28,  BLK_RW_SYSTEM));
-	memcpy(ptr, 0, 0x28);
+	memset(ptr, 0, 0x28);
 	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x150002, 4,     BLK_RW_ANY));
 	*reinterpret_cast<u32*>(ptr) = 0;
 }
@@ -544,7 +549,6 @@ extern "C" void Cfg_DeleteAndSetDefaultBlks() {
 
 extern "C" Result Cfg_UpgradeSave() {
 	ManagedHwcal_T hwcal;
-	u8 rev = 0;
 
 	Result res = 0;
 	void* ptr;
@@ -565,7 +569,6 @@ extern "C" Result Cfg_UpgradeSave() {
 
 	if(version < 50) { // dont waste time if version
 		hwcal.Load();
-		rev = hwcal.Hwcal.Header.Revision;
 	}
 
 	if(version < 16) {

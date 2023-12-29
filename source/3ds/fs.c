@@ -1,3 +1,4 @@
+#include <string.h>
 #include <3ds/types.h>
 #include <3ds/result.h>
 #include <3ds/svc.h>
@@ -182,6 +183,39 @@ Result FSUSER_CloseArchive(FS_Archive archive)
 	cmdbuf[0] = IPC_MakeHeader(0x80E,2,0); // 0x80E0080
 	cmdbuf[1] = (u32) archive;
 	cmdbuf[2] = (u32) (archive >> 32);
+
+	Result ret = 0;
+	if(R_FAILED(ret = svcSendSyncRequest(fsuHandle))) return ret;
+
+	return cmdbuf[1];
+}
+
+Result FSUSER_CreateSystemSaveData(FS_SystemSaveDataInfo info, u32 totalSize, u32 blockSize, u32 directories, u32 files, u32 directoryBuckets, u32 fileBuckets, bool duplicateData)
+{
+	u32 *cmdbuf = getThreadCommandBuffer();
+
+	cmdbuf[0] = IPC_MakeHeader(0x856,9,0); // 0x8560240
+	memcpy(&cmdbuf[1], &info, sizeof(FS_SystemSaveDataInfo));
+	cmdbuf[3] = totalSize;
+	cmdbuf[4] = blockSize;
+	cmdbuf[5] = directories;
+	cmdbuf[6] = files;
+	cmdbuf[7] = directoryBuckets;
+	cmdbuf[8] = fileBuckets;
+	cmdbuf[9] = duplicateData;
+
+	Result ret = 0;
+	if(R_FAILED(ret = svcSendSyncRequest(fsuHandle))) return ret;
+
+	return cmdbuf[1];
+}
+
+Result FSUSER_DeleteSystemSaveData(FS_SystemSaveDataInfo info)
+{
+	u32 *cmdbuf = getThreadCommandBuffer();
+
+	cmdbuf[0] = IPC_MakeHeader(0x857,2,0); // 0x8570080
+	memcpy(&cmdbuf[1], &info, sizeof(FS_SystemSaveDataInfo));
 
 	Result ret = 0;
 	if(R_FAILED(ret = svcSendSyncRequest(fsuHandle))) return ret;

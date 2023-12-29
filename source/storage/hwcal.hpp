@@ -40,7 +40,7 @@ struct ManagedHwcal_T {
 
 	bool CheckAgingFlag(CALIndexes index) const;
 	bool ReadCalIndex(void* ptr, CALIndexes index, bool cleanOnFail = true) const;
-	bool ReadCalIndexWithDefault(void* ptr, CALIndexes index, const void* defaultValue = nullptr, int minimalRevision = 0) const;
+	bool ReadCalIndexWithDefault(void* ptr, CALIndexes index, const void* defaultValue = nullptr, u8 minimalRevision = 0) const;
 	bool WriteCalIndex(const void* ptr, CALIndexes index, u16 agingFlag);
 	void GenerateDummyHeader();
 	void GenerateDummy();

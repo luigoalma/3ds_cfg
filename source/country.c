@@ -1,4 +1,4 @@
-#include <3ds.h>
+#include <3ds/types.h>
 #include <cfg.h>
 
 typedef union {
@@ -335,7 +335,7 @@ const IsoStr CountryIsoStringTable[187] = {
 Result CountryStrToEnum(const char* str, CFG_CountryCode* code) {
 	if(str[2] != 0) {
 		*code = CFG_COUNTRY_INVALID;
-		return CFG_PERMANENT_NOT_FOUND;
+		return CFG_NOT_FOUND;
 	}
 	IsoStr _str = (IsoStr){.str = {str[0], str[1]}};
 	for(int i = 0; i < 187; ++i) {
@@ -345,7 +345,7 @@ Result CountryStrToEnum(const char* str, CFG_CountryCode* code) {
 		}
 	}
 	*code = CFG_COUNTRY_INVALID;
-	return CFG_PERMANENT_NOT_FOUND;
+	return CFG_NOT_FOUND;
 }
 
 Result CountryEnumToStr(CFG_CountryCode code, char* str) {
@@ -353,11 +353,11 @@ Result CountryEnumToStr(CFG_CountryCode code, char* str) {
 		str[0] = 0;
 		str[1] = 0;
 		str[2] = 0;
-		return CFG_PERMANENT_NOT_FOUND;
+		return CFG_NOT_FOUND;
 	}
 	IsoStr _str = (IsoStr){.str16 = code};
 	for(int i = 0; i < 187; ++i) {
-		IsoStr* ptr = &CountryIsoStringTable[i];
+		const IsoStr* ptr = &CountryIsoStringTable[i];
 		if(ptr->str16 == _str.str16) {
 			str[0] = ptr->str[0];
 			str[1] = ptr->str[1];
@@ -368,5 +368,5 @@ Result CountryEnumToStr(CFG_CountryCode code, char* str) {
 	str[0] = 0;
 	str[1] = 0;
 	str[2] = 0;
-	return CFG_PERMANENT_NOT_FOUND;
+	return CFG_NOT_FOUND;
 }

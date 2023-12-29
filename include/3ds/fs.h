@@ -10,6 +10,21 @@
 extern "C" {
 #endif
 
+/// Open flags.
+enum
+{
+    FS_OPEN_READ   = BIT(0), ///< Open for reading.
+    FS_OPEN_WRITE  = BIT(1), ///< Open for writing.
+    FS_OPEN_CREATE = BIT(2), ///< Create file.
+};
+
+/// Write flags.
+enum
+{
+    FS_WRITE_FLUSH       = BIT(0), ///< Flush.
+    FS_WRITE_UPDATE_TIME = BIT(8), ///< Update file timestamp.
+};
+
 /// Media types.
 typedef enum
 {
@@ -155,6 +170,25 @@ Result FSUSER_ControlArchive(FS_Archive archive, FS_ArchiveAction action, void* 
  * @param archive Archive to close.
  */
 Result FSUSER_CloseArchive(FS_Archive archive);
+
+/**
+ * @brief Creates system save data.
+ * @param info Info of the save data.
+ * @param totalSize Total size of the save data.
+ * @param blockSize Block size of the save data. (usually 0x1000)
+ * @param directories Number of directories.
+ * @param files Number of files.
+ * @param directoryBuckets Directory hash tree bucket count.
+ * @param fileBuckets File hash tree bucket count.
+ * @param duplicateData Whether to store an internal duplicate of the data.
+ */
+Result FSUSER_CreateSystemSaveData(FS_SystemSaveDataInfo info, u32 totalSize, u32 blockSize, u32 directories, u32 files, u32 directoryBuckets, u32 fileBuckets, bool duplicateData);
+
+/**
+ * @brief Deletes system save data.
+ * @param info Info of the save data.
+ */
+Result FSUSER_DeleteSystemSaveData(FS_SystemSaveDataInfo info);
 
 /**
  * @brief Reads from a file.

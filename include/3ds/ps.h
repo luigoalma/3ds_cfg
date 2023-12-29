@@ -42,7 +42,7 @@ typedef enum {
 
 Result psInit(void);
 void psExit(void);
-Result PS_VerifyRsaSha256(u8 *hash, PS_RSA_Context *ctx, u8 *signature);
+Result PS_VerifyRsaSha256(u8 *hash, const PS_RSA_Context *ctx, u8 *signature);
 Result PS_GetLocalFriendCodeSeed(u64* seed);
 Result PS_GenerateRandomBytes(void* out, size_t len);
 
