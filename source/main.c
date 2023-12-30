@@ -189,7 +189,7 @@ void CFGMain() {
 		if (index == 0)
 			HandleSRVNotification();
 
-		else if (index == 1) {
+		else if (index >= 1 && index < REMOTE_SESSION_INDEX) {
 			Handle newsession = 0;
 			Err_FailedThrow(svcAcceptSession(&newsession, session_handles[index]));
 
