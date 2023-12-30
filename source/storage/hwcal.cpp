@@ -149,38 +149,40 @@ static void CAL_COPY(void* dst, const void* src) {
 		*reinterpret_cast<T*>(dst) = *reinterpret_cast<const T*>(src);
 }
 
+#define decltype_member(x, y) decltype(reinterpret_cast<x*>(0)->y)
+
 template<typename T>
 static bool CAL_COPY_FLIPPERCHECK(void* dst, const void* src, bool cleanOnFail) {
-	T* _dst = reinterpret_cast<T*>(dst);
 	const T* _src = reinterpret_cast<const T*>(src);
+	decltype_member(T, Data)* _dst = reinterpret_cast<decltype_member(T, Data)*>(dst);
 
 	if(!CheckHwcalByteFlipper<T>(*_src)) {
 		if(cleanOnFail) {
-			if(sizeof(_dst->Data) == 1) {
-				*reinterpret_cast<u8*>(&_dst->Data) = 0;
-			} else if(sizeof(_dst->Data) >= 2) {
-				*reinterpret_cast<u16*>(&_dst->Data) = 0;
+			if(sizeof(*_dst) == 1) {
+				*reinterpret_cast<u8*>(_dst) = 0;
+			} else if(sizeof(*_dst) >= 2) {
+				*reinterpret_cast<u16*>(_dst) = 0;
 			}
 		}
 		return false;
 	}
 
-	CAL_COPY<decltype(_dst->Data)>(&_dst->Data, &_src->Data);
+	CAL_COPY<decltype_member(T, Data)>(_dst, &_src->Data);
 	return true;
 }
 
 template<typename T>
 static bool CAL_COPY_CRCCHECK(void* dst, const void* src, bool cleanOnFail) {
-	T* _dst = reinterpret_cast<T*>(dst);
 	const T* _src = reinterpret_cast<const T*>(src);
+	decltype_member(T, Data)* _dst = reinterpret_cast<decltype_member(T, Data)*>(dst);
 
 	if(!CheckHwcalChecksum<T>(*_src)) {
 		if(cleanOnFail)
-			memset(&_dst->Data, 0, sizeof(_dst->Data));
+			memset(_dst, 0, sizeof(*_dst));
 		return false;
 	}
 
-	CAL_COPY<decltype(_dst->Data)>(&_dst->Data, &_src->Data);
+	CAL_COPY<decltype_member(T, Data)>(_dst, &_src->Data);
 	return true;
 }
 
@@ -217,7 +219,7 @@ static bool CAL_COPY_CRCMAKE(void* dst, const void* src) {
 	T* _dst = reinterpret_cast<T*>(dst);
 	const decltype(_dst->Data)* _src = reinterpret_cast<const decltype(_dst->Data)*>(src);
 
-	CAL_COPY<decltype(_src)>(&_dst->Data, _src);
+	CAL_COPY<decltype(_dst->Data)>(&_dst->Data, _src);
 	_dst->Checksum = crc16(0x55AA, dst, offsetof(T, Checksum));
 
 	return true;
