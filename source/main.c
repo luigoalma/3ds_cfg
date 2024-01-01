@@ -203,7 +203,7 @@ void CFGMain() {
 			handle_count++;
 
 		} else if (index >= REMOTE_SESSION_INDEX && index < INDEX_MAX) {
-			u8 sindex = service_indexes[index];
+			u8 sindex = service_indexes[index - REMOTE_SESSION_INDEX];
 
 			CFG_IPCSession(sindex);
 			target = session_handles[index];
