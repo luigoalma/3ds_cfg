@@ -93,9 +93,12 @@ inline void ManagedSignedFile_T<T,Paths,InvalidPaths,PathCount,OverridePath,Over
 		filesize = 0;
 	}
 
-	for(int i = 0; i < PathCount; ++i) {
+	for(int i = PathCount - 1; i >= 0; --i) {
+		// config tests from first to last but might as well go reverse
+		// though in real case, there's only 2, so
 		if(OpenDeleteFail(file, Paths[i])) {
 			Index = i;
+			break;
 		}
 	}
 
