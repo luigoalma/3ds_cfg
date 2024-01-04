@@ -9,34 +9,34 @@
 
 static struct {
 	Handle spiHandle;
-	bool nspiSet;
-} NORHandler = {0, false};
+	u8 nspiSet;
+} NORHandler = {0, 0};
 
 void NOR_ServiceInit() {
 	Err_Panic(spiNORInit(&NORHandler.spiHandle));
-	NORHandler.nspiSet = false;
+	NORHandler.nspiSet = 0;
 }
 
 void NOR_ServiceExit() {
 	spiExit(&NORHandler.spiHandle);
 }
 
-static Result NOR_ToggleMode(u8 toggle) {
-	NORHandler.nspiSet = toggle ? true : false;
+static Result NOR_NSPISet(u8 set) {
+	NORHandler.nspiSet = set;
 	return SPI_SetDeviceNSPIModeAndRate(
 		NORHandler.spiHandle,
 		1,
-		toggle ? true : false,
-		toggle ? 3 : 0
+		set ? true : false,
+		set ? 3 : 0
 	);
 }
 
-static Result NOR_Initialize() {
+static Result NOR_Initialize(u8 nspiSet) {
 	Result res = SPI_InitDeviceRate(NORHandler.spiHandle, 1, 0);
 	if(R_FAILED(res))
 		return res;
 
-	NOR_ToggleMode(true);
+	NOR_NSPISet(nspiSet);
 	return 0;
 }
 
@@ -214,7 +214,7 @@ void CFG_NOR_IPCSession() {
 
 	switch (cmdid) {
 	case 0x1:
-		cmdbuf[1] = NOR_Initialize();
+		cmdbuf[1] = NOR_Initialize(cmdbuf[1] & 0xFF);
 		cmdbuf[0] = IPC_MakeHeader(0x1, 1, 0);
 		break;
 	case 0x2:
@@ -223,7 +223,7 @@ void CFG_NOR_IPCSession() {
 		cmdbuf[1] = 0;
 		break;
 	case 0x3:
-		cmdbuf[1] = NOR_ToggleMode(cmdbuf[1] & 0xFF);
+		cmdbuf[1] = NOR_NSPISet(cmdbuf[1] & 0xFF);
 		cmdbuf[0] = IPC_MakeHeader(0x3, 1, 0);
 		break;
 	case 0x4:
