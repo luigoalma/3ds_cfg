@@ -42,6 +42,18 @@ extern "C" void Cfg_DeleteFixData() {
 	Err_FailedThrow(::SystemSave::Delete(::SystemSave::FixDataFSInfo));
 }
 
+ConfigBlkEntry_T* ConfigData_T::FindBlkId(u32 Id) {
+	ConfigBlkEntry_T* ptr = nullptr;
+
+	for(int i = 0; i < TotalEntries; ++i) {
+		if(BlkEntries[i].Id == Id) {
+			ptr = &BlkEntries[i];
+		}
+	}
+
+	return ptr;
+}
+
 // Comment note: comment written September 23rd, 2023
 // importing a config from citra to real save would fail sanity check
 // citra's implementation is incorrect as of this writing
@@ -279,17 +291,18 @@ Result ConfigData_T::ReadBlk(void* ptr, u32 blkId, size_t size, bool system) {
 	Result res = GetBlkPtrForReading(_ptr, blkId, size, system ? BLK_SYSTEM_READ_PERM : BLK_USER_READ_PERM);
 	if(R_FAILED(res)) return res;
 
-	if(size == 4 && (reinterpret_cast<uptr>(ptr) & 0x3) == 0) { // size 4, aligned by 4 
-		*reinterpret_cast<u32*>(ptr) = *reinterpret_cast<const u32*>(_ptr);
-	} else if((reinterpret_cast<uptr>(ptr) & 0x1) == 0) {
-		if(size == 3) {
+	if(size <= 4) {
+		if((reinterpret_cast<uptr>(ptr) & 0x3) == 0) {
+			*reinterpret_cast<u32*>(ptr) = *reinterpret_cast<const u32*>(_ptr);
+		} else if((reinterpret_cast<uptr>(ptr) & 0x1) == 0) {
 			*reinterpret_cast<u16*>(ptr) = *reinterpret_cast<const u16*>(_ptr);
-			*(reinterpret_cast<u8*>(ptr)+2) = *(reinterpret_cast<const u8*>(_ptr)+2);
-		} else if(size == 2) {
-			*reinterpret_cast<u16*>(ptr) = *reinterpret_cast<const u16*>(_ptr);
+			if(size > 2) *(reinterpret_cast<u16*>(ptr)+1) = *(reinterpret_cast<const u16*>(_ptr)+1);
+		} else {
+			*reinterpret_cast<u8*>(ptr) = *reinterpret_cast<const u8*>(_ptr);
+			if(size > 1) *(reinterpret_cast<u8*>(ptr)+1) = *(reinterpret_cast<const u8*>(_ptr)+1);
+			if(size > 2) *(reinterpret_cast<u8*>(ptr)+2) = *(reinterpret_cast<const u8*>(_ptr)+2);
+			if(size > 3) *(reinterpret_cast<u8*>(ptr)+3) = *(reinterpret_cast<const u8*>(_ptr)+3);
 		}
-	} else if(size == 1) {
-		*reinterpret_cast<u8*>(ptr) = *reinterpret_cast<const u8*>(_ptr);
 	} else {
 		memcpy(ptr, _ptr, size);
 	}
@@ -347,9 +360,7 @@ extern "C" void Cfg_DeleteAndResetConfig() {
 }
 
 static void Cfg_CreateHwcalBlks() {
-	void *ptr1,  *ptr2,  *ptr3,  *ptr4,  *ptr5,  *ptr6,  *ptr7,  *ptr8,  *ptr9,  *ptr10;
-	void *ptr11, *ptr12, *ptr13, *ptr14, *ptr15, *ptr16, *ptr17, *ptr18, *ptr19, *ptr20;
-	void *ptr21;
+	void *ptr;
 
 	ManagedHwcal_T hwcal;
 	hwcal.Load();
@@ -358,63 +369,62 @@ static void Cfg_CreateHwcalBlks() {
 
 	// original cfg doesnt check success of blk creation...
 
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr1,  0x10000,  sizeof(HWCALRtcCompensationData_T),            BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr2,  0x50000,  sizeof(HWCALScreenFlickerData_T),              BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr3,  0x40000,  sizeof(HWCALTouchData_T),                      BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr4,  0x40002,  sizeof(HWCALGyroscopeData_T),                  BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr5,  0x30000,  sizeof(HWCALRtcCorrectionData_T),              BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr6,  0x40003,  sizeof(HWCALAccelerometerData_T),              BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr7,  0x60000,  sizeof(OuterCamaras_T),                        BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr8,  0x40001,  sizeof(CirclePadParts_T),                      BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr9,  0x50002,  sizeof(HWCALBacklightPwmData_T),               BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr10, 0x50003,  sizeof(HWCALLcdPowerSaveData_T),               BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr11, 0x50004,  sizeof(HWCALLcdPowerSaveData_T),               BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr12, 0x50005,  sizeof(HWCALLcdStereoscopicData_T),            BLK_RW_ANY));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr13, 0x120000, sizeof(HWCALSlidersData_T),                    BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr14, 0x70000,  sizeof(HWCALSound3DFilterData_T),              (rev < 7) ? BLK_RW_SYSTEM : BLK_RW_ANY));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr15, 0x20000,  sizeof(HWCALCodecData_T),                      BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr16, 0x50006,  sizeof(HWCALLcdModeDelayData_T),               BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr17, 0x70002,  sizeof(HWCALMicrophoneEchoCancellationData_T), BLK_RW_ANY));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr18, 0x40004,  sizeof(CStick_T),                              BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr19, 0x50008,  sizeof(HWCALLcdPowerSaveExtraData_T),          BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr20, 0x50007,  sizeof(HWCALPitData_T),                        BLK_RW_SYSTEM));
-	Err_FailedThrow(ConfigSave.CreateBlk(ptr21, 0x180001, sizeof(HWCALQtmData_T),                        BLK_RW_SYSTEM));
-
-	hwcal.ReadCalIndex(ptr1, CAL_INDEX_RTCCOMPENSATION);
-	hwcal.ReadCalIndex(ptr2, CAL_INDEX_SCREENFLICKER);
-	hwcal.ReadCalIndex(ptr3, CAL_INDEX_TOUCH);
-	hwcal.ReadCalIndex(ptr4, CAL_INDEX_GYRO);
-	hwcal.ReadCalIndex(ptr5, CAL_INDEX_RTCCORRECTION);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x10000,  sizeof(HWCALRtcCompensationData_T),            BLK_RW_SYSTEM));
+	hwcal.ReadCalIndex(ptr, CAL_INDEX_RTCCOMPENSATION);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x50000,  sizeof(HWCALScreenFlickerData_T),              BLK_RW_SYSTEM));
+	hwcal.ReadCalIndex(ptr, CAL_INDEX_SCREENFLICKER);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x40000,  sizeof(HWCALTouchData_T),                      BLK_RW_SYSTEM));
+	hwcal.ReadCalIndex(ptr, CAL_INDEX_TOUCH);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x40002,  sizeof(HWCALGyroscopeData_T),                  BLK_RW_SYSTEM));
+	hwcal.ReadCalIndex(ptr, CAL_INDEX_GYRO);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x30000,  sizeof(HWCALRtcCorrectionData_T),              BLK_RW_SYSTEM));
+	hwcal.ReadCalIndex(ptr, CAL_INDEX_RTCCORRECTION);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x40003,  sizeof(HWCALAccelerometerData_T),              BLK_RW_SYSTEM));
 	if(hwcal.CheckAgingFlag(CAL_INDEX_ACCELEROMETER)) {
-		hwcal.ReadCalIndexWithDefault(ptr6, CAL_INDEX_ACCELEROMETER, &DummyAccelerometer);
+		hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_ACCELEROMETER, &DummyAccelerometer);
 	} else {
-		memcpy(ptr6, &DummyAccelerometer, sizeof(HWCALAccelerometerData_T));
+		memcpy(ptr, &DummyAccelerometer, sizeof(HWCALAccelerometerData_T));
 	}
-	Hwcal_GetOuterCamsNoCheck(hwcal, ptr7);
-	Hwcal_GetCirclePadNoCheck(hwcal, ptr8);
-	hwcal.ReadCalIndexWithDefault(ptr9, CAL_INDEX_BACKLIGHTPWM, &DummyBacklight, 11);
-	hwcal.ReadCalIndexWithDefault(ptr10, CAL_INDEX_LCDPOWERSAVE, &DummyLcdPowerSave, 8);
-	hwcal.ReadCalIndexWithDefault(ptr11, CAL_INDEX_LCDPOWERSAVELGY, &DummyLcdPowerSave, 8);
-	hwcal.ReadCalIndexWithDefault(ptr12, CAL_INDEX_LCDSTEREOSCOPIC, &DummyLcdStereoscopic, 10);
-	hwcal.ReadCalIndexWithDefault(ptr13, CAL_INDEX_SLIDERS, &DummySliders, 7);
-	hwcal.ReadCalIndexWithDefault(ptr14, CAL_INDEX_SOUND3DFILTER, &DefaultSound3DFilter, 7);
-	hwcal.ReadCalIndexWithDefault(ptr15, CAL_INDEX_CODEC, &DummyCodec, 9);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x60000,  sizeof(OuterCamaras_T),                        BLK_RW_SYSTEM));
+	Hwcal_GetOuterCamsNoCheck(hwcal, ptr);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x40001,  sizeof(CirclePadParts_T),                      BLK_RW_SYSTEM));
+	Hwcal_GetCirclePadNoCheck(hwcal, ptr);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x50002,  sizeof(HWCALBacklightPwmData_T),               BLK_RW_SYSTEM));
+	hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_BACKLIGHTPWM, &DummyBacklight, 11);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x50003,  sizeof(HWCALLcdPowerSaveData_T),               BLK_RW_SYSTEM));
+	hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_LCDPOWERSAVE, &DummyLcdPowerSave, 8);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x50004,  sizeof(HWCALLcdPowerSaveData_T),               BLK_RW_SYSTEM));
+	hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_LCDPOWERSAVELGY, &DummyLcdPowerSave, 8);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x50005,  sizeof(HWCALLcdStereoscopicData_T),            BLK_RW_ANY));
+	hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_LCDSTEREOSCOPIC, &DummyLcdStereoscopic, 10);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x120000, sizeof(HWCALSlidersData_T),                    BLK_RW_SYSTEM));
+	hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_SLIDERS, &DummySliders, 7);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x70000,  sizeof(HWCALSound3DFilterData_T),              (rev < 7) ? BLK_RW_SYSTEM : BLK_RW_ANY));
+	hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_SOUND3DFILTER, &DefaultSound3DFilter, 7);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x20000,  sizeof(HWCALCodecData_T),                      BLK_RW_SYSTEM));
+	hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_CODEC, &DummyCodec, 9);
 	if(rev < 9) {
 		if(hwcal.CheckAgingFlag(CAL_INDEX_CODEC)) {
 			HWCALCodecData_T foo;
 			hwcal.ReadCalIndex(reinterpret_cast<void*>(&foo), CAL_INDEX_CODEC);
-			reinterpret_cast<HWCALCodecData_T*>(ptr15)->PGA_GAIN = foo.PGA_GAIN;
+			reinterpret_cast<HWCALCodecData_T*>(ptr)->PGA_GAIN = foo.PGA_GAIN;
 		}
 	} else if(rev < 12) {
-		reinterpret_cast<HWCALCodecData_T*>(ptr15)->AnalogInterval = DummyCodec.AnalogInterval;
-		reinterpret_cast<HWCALCodecData_T*>(ptr15)->Analog_XP_Pullup = DummyCodec.Analog_XP_Pullup;
+		reinterpret_cast<HWCALCodecData_T*>(ptr)->AnalogInterval = DummyCodec.AnalogInterval;
+		reinterpret_cast<HWCALCodecData_T*>(ptr)->Analog_XP_Pullup = DummyCodec.Analog_XP_Pullup;
 	}
-	hwcal.ReadCalIndexWithDefault(ptr16, CAL_INDEX_LCDMODEDELAY, &DummyLcdModeDelay, 9);
-	hwcal.ReadCalIndexWithDefault(ptr17, CAL_INDEX_MICECHOCANCEL, &DummyMicEchoCancel, 13);
-	Hwcal_GetCStickNoCheck(hwcal, ptr18);
-	hwcal.ReadCalIndexWithDefault(ptr19, CAL_INDEX_LCDPOWERSAVEEXTRA, nullptr, 15);
-	hwcal.ReadCalIndexWithDefault(ptr20, CAL_INDEX_PIT, &DefaultPit, 16);
-	hwcal.ReadCalIndexWithDefault(ptr21, CAL_INDEX_QTM, &DefaultQtm, 18);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x50006,  sizeof(HWCALLcdModeDelayData_T),               BLK_RW_SYSTEM));
+	hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_LCDMODEDELAY, &DummyLcdModeDelay, 9);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x70002,  sizeof(HWCALMicrophoneEchoCancellationData_T), BLK_RW_ANY));
+	hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_MICECHOCANCEL, &DummyMicEchoCancel, 13);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x40004,  sizeof(CStick_T),                              BLK_RW_SYSTEM));
+	Hwcal_GetCStickNoCheck(hwcal, ptr);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x50008,  sizeof(HWCALLcdPowerSaveExtraData_T),          BLK_RW_SYSTEM));
+	hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_LCDPOWERSAVEEXTRA, nullptr, 15);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x50007,  sizeof(HWCALPitData_T),                        BLK_RW_SYSTEM));
+	hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_PIT, &DefaultPit, 16);
+	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x180001, sizeof(HWCALQtmData_T),                        BLK_RW_SYSTEM));
+	hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_QTM, &DefaultQtm, 18);
 }
 
 static void Cfg_CreateNormalBlks() {

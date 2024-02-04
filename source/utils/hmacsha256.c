@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <utils/hmacsha256.h>
 #include <utils/sha256.h>
 #include <string.h>

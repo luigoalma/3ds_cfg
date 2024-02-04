@@ -60,14 +60,3 @@ inline void* ConfigBlkEntry_T::GetPtr(void* BasePtr) {
 	return reinterpret_cast<void*>(reinterpret_cast<u8*>(BasePtr) + RelOffset);
 }
 
-inline ConfigBlkEntry_T* ConfigData_T::FindBlkId(u32 Id) {
-	ConfigBlkEntry_T* ptr = nullptr;
-
-	for(int i = 0; i < TotalEntries; ++i) {
-		if(BlkEntries[i].Id == Id) {
-			ptr = &BlkEntries[i];
-		}
-	}
-
-	return ptr;
-}
