@@ -100,13 +100,13 @@ static Result NOR_GetRDSR(u8* out) {
 static bool NOR_GetBusyState() {
 	u8 rdsr;
 	Err_Panic(NOR_GetRDSR(&rdsr)); // cfg doesnt originally check if it failed
-	return (rdsr & 0x1) ? true : false;
+	return rdsr & 0x1;
 }
 
 static bool NOR_GetWritableState() {
 	u8 rdsr;
 	Err_Panic(NOR_GetRDSR(&rdsr)); // cfg doesnt originally check if it failed
-	return (rdsr & 0x2) ? true : false;
+	return (rdsr & 0x2) >> 1;
 }
 
 static void NOR_WaitForNonBusy() {
@@ -173,7 +173,7 @@ static Result NOR_SingleWrite(u32 offset, const void* data, size_t dataLen) {
 static void NOR_Write(u32 offset, const void* data, size_t dataLen) {
 	const u8* _data = (const u8*)data;
 
-	u8 buf[0x100];
+	ALIGN(4) u8 buf[0x100];
 
 	u32 page_addr = offset & 0xFFFFFF00;
 	u8 page_off = offset & 0xFF;
@@ -236,10 +236,11 @@ void CFG_NOR_IPCSession() {
 			cmdbuf[0] = IPC_MakeHeader(0x0, 1, 0);
 			cmdbuf[1] = OS_INVALID_IPC_PARAMATER;
 		} else {
+			u32 offset = cmdbuf[1];
 			void* ptr = (void*)cmdbuf[4];
 			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[3]);
 
-			cmdbuf[1] = NOR_SingleRead(cmdbuf[2], ptr, size);
+			cmdbuf[1] = NOR_SingleRead(offset, ptr, size);
 			cmdbuf[0] = IPC_MakeHeader(0x5, 1, 2);
 			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_W);
 			cmdbuf[3] = (u32)ptr;
@@ -250,10 +251,11 @@ void CFG_NOR_IPCSession() {
 			cmdbuf[0] = IPC_MakeHeader(0x0, 1, 0);
 			cmdbuf[1] = OS_INVALID_IPC_PARAMATER;
 		} else {
+			u32 offset = cmdbuf[1];
 			void* ptr = (void*)cmdbuf[4];
 			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[3]);
 
-			NOR_Write(cmdbuf[2], ptr, size);
+			NOR_Write(offset, ptr, size);
 			cmdbuf[0] = IPC_MakeHeader(0x6, 1, 2);
 			cmdbuf[1] = 0;
 			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_R);
@@ -301,10 +303,11 @@ void CFG_NOR_IPCSession() {
 			cmdbuf[0] = IPC_MakeHeader(0x0, 1, 0);
 			cmdbuf[1] = OS_INVALID_IPC_PARAMATER;
 		} else {
+			u32 offset = cmdbuf[1];
 			void* ptr = (void*)cmdbuf[4];
 			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[3]);
 
-			cmdbuf[1] = NOR_SingleRead(cmdbuf[2], ptr, size);
+			cmdbuf[1] = NOR_SingleRead(offset, ptr, size);
 			cmdbuf[0] = IPC_MakeHeader(0xF, 1, 2);
 			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_W);
 			cmdbuf[3] = (u32)ptr;
@@ -315,10 +318,11 @@ void CFG_NOR_IPCSession() {
 			cmdbuf[0] = IPC_MakeHeader(0x0, 1, 0);
 			cmdbuf[1] = OS_INVALID_IPC_PARAMATER;
 		} else {
+			u32 offset = cmdbuf[1];
 			const void* ptr = (const void*)cmdbuf[4];
 			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[3]);
 
-			cmdbuf[1] = NOR_SingleWrite(cmdbuf[2], ptr, size);
+			cmdbuf[1] = NOR_SingleWrite(offset, ptr, size);
 			cmdbuf[0] = IPC_MakeHeader(0x10, 1, 2);
 			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_R);
 			cmdbuf[3] = (u32)ptr;

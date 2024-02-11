@@ -26,7 +26,7 @@ typedef enum {
 static inline void* getThreadLocalStorage(void)
 {
 	void* ret;
-	__asm__ ("mrc p15, 0, %[data], c13, c0, 3" : [data] "=r" (ret));
+	__asm__ ("mrc p15, 0, %[data], c13, c0, 3" : [data] "=r" (ret) :: "memory");
 	return ret;
 }
 
