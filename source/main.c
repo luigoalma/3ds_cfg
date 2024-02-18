@@ -13,6 +13,7 @@
 #include <storage/config.h>
 #include <storage/lfcs.h>
 #include <storage/secinfo.h>
+#include <debugging/debug.h>
 
 static __attribute__((section(".data.TerminationFlag"))) bool TerminationFlag = false;
 
@@ -128,6 +129,8 @@ void CFGMain() {
 	Err_Panic(srvInit());
 	Err_FailedThrow(fsInit());
 
+	DebugOut_Init();
+
 	TryMountCFGSystemSave();
 	Cfg_OpenNandAccess();
 
@@ -221,6 +224,8 @@ void CFGMain() {
 	svcCloseHandle(session_handles[0]);
 
 	NOR_ServiceExit();
+
+	DebugOut_Exit();
 
 	fsExit();
 	srvExit();

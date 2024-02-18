@@ -123,6 +123,17 @@ Result FSUSER_Initialize(Handle session);
 Result FSUSER_OpenFile(Handle* out, FS_Archive archive, FS_Path path, u32 openFlags, u32 attributes);
 
 /**
+ * @brief Opens a file directly, bypassing the requirement of an opened archive handle.
+ * @param out Pointer to output the file handle to.
+ * @param archiveId ID of the archive containing the file.
+ * @param archivePath Path of the archive containing the file.
+ * @param filePath Path of the file.
+ * @param openFlags Flags to open the file with.
+ * @param attributes Attributes of the file.
+ */
+Result FSUSER_OpenFileDirectly(Handle* out, FS_ArchiveID archiveId, FS_Path archivePath, FS_Path filePath, u32 openFlags, u32 attributes);
+
+/**
  * @brief Deletes a file.
  * @param archive Archive containing the file.
  * @param path Path of the file.

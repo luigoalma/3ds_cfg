@@ -10,6 +10,18 @@ TOPDIR ?= $(CURDIR)
 include $(DEVKITARM)/3ds_rules
 
 #---------------------------------------------------------------------------------
+# DEBUG_ENABLE to enable debug functions and build
+#---------------------------------------------------------------------------------
+DEBUG_ENABLE := 
+ifneq ($(DEBUG_ENABLE),1)
+	CFLAGS_BASE   = -g -Os -flto
+	SOURCES_EXTRA = 
+else
+	CFLAGS_BASE   = -g3 -Og -fno-inline -DDEBUG_ENABLED=1
+	SOURCES_EXTRA = source/debugging
+endif
+
+#---------------------------------------------------------------------------------
 # TARGET is the name of the output
 # BUILD is the directory where object files & intermediate files will be placed
 # SOURCES is a list of directories containing source code
@@ -18,7 +30,7 @@ include $(DEVKITARM)/3ds_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source source/3ds source/utils source/storage
+SOURCES		:=	source source/3ds source/utils source/storage $(SOURCES_EXTRA)
 DATA		:=	
 INCLUDES	:=	include
 
@@ -28,7 +40,7 @@ INCLUDES	:=	include
 ARCH	:=	-march=armv6k -mtune=mpcore -mfloat-abi=soft -mtp=soft
 DEFINES :=	-DARM11 -D_3DS
 
-CFLAGS	:=	-g -Wall -Wextra -Werror -Wno-unused-value -Os -flto -mword-relocations \
+CFLAGS	:=	$(CFLAGS_BASE) -Wall -Wextra -Werror -Wno-unused-value -mword-relocations \
 			-fomit-frame-pointer -ffunction-sections -fdata-sections \
 			-fno-exceptions -fno-ident -fno-unwind-tables -fno-asynchronous-unwind-tables \
 			-fno-tree-loop-distribute-patterns \

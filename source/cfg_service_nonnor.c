@@ -9,9 +9,18 @@
 #include <storage/hwcal.h>
 #include <storage/lfcs.h>
 #include <storage/secinfo.h>
+#include <debugging/debug.h>
 #include "country.h"
 
 void CFG_Common_IPCSession(int service_index) {
+	if(service_index == CFG_U_SERVICE_INDEX)
+		DebugOut_Write("=== cfg:u received ipc ===\n", 27);
+	else if(service_index == CFG_S_SERVICE_INDEX)
+		DebugOut_Write("=== cfg:s received ipc ===\n", 27);
+	else
+		DebugOut_Write("=== cfg:i received ipc ===\n", 27);
+	DebugOut_WriteCmdBuf();
+
 	u32* cmdbuf = getThreadCommandBuffer();
 
 	u16 cmdid = cmdbuf[0] >> 16;
@@ -457,4 +466,12 @@ void CFG_Common_IPCSession(int service_index) {
 		cmdbuf[0] = IPC_MakeHeader(0x0, 1, 0);
 		cmdbuf[1] = OS_INVALID_HEADER;
 	}
+
+	if(service_index == CFG_U_SERVICE_INDEX)
+		DebugOut_Write("=== cfg:u reply ipc ===\n", 24);
+	else if(service_index == CFG_S_SERVICE_INDEX)
+		DebugOut_Write("=== cfg:s reply ipc ===\n", 24);
+	else
+		DebugOut_Write("=== cfg:i reply ipc ===\n", 24);
+	DebugOut_WriteCmdBuf();
 }

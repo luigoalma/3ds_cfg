@@ -6,6 +6,7 @@
 #include <err.h>
 #include <cfg.h>
 #include <cfg_service.h>
+#include <debugging/debug.h>
 
 static struct {
 	Handle spiHandle;
@@ -208,6 +209,9 @@ static void NOR_Write(u32 offset, const void* data, size_t dataLen) {
 }
 
 void CFG_NOR_IPCSession() {
+	DebugOut_Write("=== cfg:nor received ipc ===\n", 29);
+	DebugOut_WriteCmdBuf();
+
 	u32* cmdbuf = getThreadCommandBuffer();
 
 	u16 cmdid = cmdbuf[0] >> 16;
@@ -348,4 +352,7 @@ void CFG_NOR_IPCSession() {
 		cmdbuf[0] = IPC_MakeHeader(0x0, 1, 0);
 		cmdbuf[1] = OS_INVALID_HEADER;
 	}
+
+	DebugOut_Write("=== cfg:nor reply ipc ===\n", 26);
+	DebugOut_WriteCmdBuf();
 }
