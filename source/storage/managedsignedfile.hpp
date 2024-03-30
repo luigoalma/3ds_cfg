@@ -77,6 +77,7 @@ inline void ManagedSignedFile_T<T,Paths,InvalidPaths,PathCount,OverridePath,Over
 	u32 filesize = 0;
 
 	if(HasDefinedOverride()) {
+		FSUSER_DeleteFile(::NandAccess::NandRWFSArchive, *OverridePathTemp);
 		Result res = FSUSER_OpenFile(&file, ::NandAccess::NandRWFSArchive, *OverridePath, FS_OPEN_READ, 0);
 		if(R_SUCCEEDED(res)) res = FSFILE_Read(file, &filesize, 0LLU, &Data.Raw[0], sizeof(T));
 
@@ -147,7 +148,7 @@ inline void ManagedSignedFile_T<T,Paths,InvalidPaths,PathCount,OverridePath,Over
 			FSFILE_Close(file);
 			svcCloseHandle(file);
 			file = 0;
-			FSUSER_DeleteFile(::NandAccess::NandRWFSArchive, InvalidPaths[Index]); // config didnt ensure path was clear to use, and not sure if FS errors on rename but
+			FSUSER_DeleteFile(::NandAccess::NandRWFSArchive, InvalidPaths[Index]); // config didnt ensure path was clear to use and not sure if FS errors on rename, but to be sure
 			FSUSER_RenameFile(::NandAccess::NandRWFSArchive, Paths[Index], ::NandAccess::NandRWFSArchive, InvalidPaths[Index]);
 		}
 	}

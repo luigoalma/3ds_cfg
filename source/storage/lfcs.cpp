@@ -136,7 +136,7 @@ inline Result ManagedLfcs_T::SetSignature(const void* sig) {
 
 	memcpy(Manager.Data.Signature, sig, sizeof(Manager.Data.Signature));
 
-	Manager.WasChecked = false; // cfg didnt check later again, invalidated signed but not to check it again later
+	Manager.WasChecked = false; // cfg didnt check later again, invalidated signed but not to check it again later, we do
 	Manager.IsSigned = false;
 
 	return 0;
@@ -149,7 +149,7 @@ inline Result ManagedLfcs_T::SetData(const void* data, bool invalidateSignature)
 	memcpy(Manager.Data.SignedData, data, sizeof(Manager.Data.SignedData));
 
 	if(invalidateSignature) {
-		Manager.WasChecked = false;
+		Manager.WasChecked = false; // same as SetSignature
 		Manager.IsSigned = false;
 	}
 

@@ -188,6 +188,9 @@ inline Result ManagedSecInfo_T::SetWholeSecInfo(const void* sig, const void* dat
 	memcpy(Manager.Data.Signature,  sig,  sizeof(Manager.Data.Signature));
 	memcpy(Manager.Data.SignedData, data, sizeof(Manager.Data.SignedData));
 
+	Manager.WasChecked = false; // cfg didnt check later again, invalidated signed but not to check it again later, we do
+	Manager.IsSigned = false;
+
 	return 0;
 }
 

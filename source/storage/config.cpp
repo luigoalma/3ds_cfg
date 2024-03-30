@@ -14,6 +14,11 @@
 #include "config.hpp"
 #include "hwcal.hpp"
 
+// We do read size checks of read files that actual config does not do
+// Config accepts files that are not the expected size
+// Never reads more than expected size but will assume it always read expected size even if it's actually less than
+// This applies to /config, lfcs, secinfo and hwcal
+
 #define UTIL_INVALID_COMBINATION MAKERESULT(RL_USAGE, RS_INVALIDARG, RM_UTIL, RD_INVALID_COMBINATION)
 
 static const FS_Path ConfigPath = {PATH_ASCII, 8, "/config"};
@@ -115,7 +120,7 @@ void ConfigData_T::Save() const {
 	FSFILE_Close(file);
 	svcCloseHandle(file);
 
-	if(R_SUCCEEDED(res)) 
+	if(R_SUCCEEDED(res))
 		::SystemSave::Commit(::SystemSave::NormalFSArchive);
 }
 
@@ -202,8 +207,9 @@ bool ConfigData_T::LoadFixData() {
 
 void ConfigData_T::DeleteAndReset() {
 	FSUSER_DeleteFile(::SystemSave::NormalFSArchive, ConfigPath);
-	TotalEntries = 0;
-	DataEntryOffset = CONFIGSIZE;
+	// config would actually still load the /config file if, by chance, FSUSER_DeleteFile failed for whatever reason
+	// myself, I just set data as reset anyway
+	Reset();
 }
 
 Result ConfigData_T::GetBlkPtr(void*& ptr, u32 blkId, size_t size, CFG_BlkFlags accessFlags, CFG_BlkFlags bitmask, bool exactMatchAccess) {
@@ -492,7 +498,7 @@ static void Cfg_CreateNormalBlks() {
 	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xE0000,  1,     BLK_RW_ANY));
 	*reinterpret_cast<u8*>(ptr) = 0;
 	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0x70001,  1,     BLK_RW_ANY));
-	*reinterpret_cast<u8*>(ptr) = 0;
+	*reinterpret_cast<u8*>(ptr) = 2;
 	Err_FailedThrow(ConfigSave.CreateBlk(ptr, 0xF0000,  0x10,  BLK_RW_SYSTEM));
 	reinterpret_cast<u64*>(ptr)[0] = 0;
 	reinterpret_cast<u64*>(ptr)[1] = snake ? 0x300000006LLU: 0x300000000LLU;
@@ -625,55 +631,54 @@ extern "C" Result Cfg_UpgradeSave() {
 
 		res = ConfigSave.CreateBlk(ptr, 0xF0004, 4, BLK_RW_SYSTEM);
 		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
-		if(res != CFG_ALREADY_EXISTS) 
+		if(res != CFG_ALREADY_EXISTS)
 			*reinterpret_cast<u32*>(ptr) = 0;
 
 		res = ConfigSave.CreateBlk(ptr, 0x150000, 4, BLK_RW_SYSTEM);
 		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
-		if(res != CFG_ALREADY_EXISTS) 
+		if(res != CFG_ALREADY_EXISTS)
 			*reinterpret_cast<u32*>(ptr) = 0;
 
 		res = ConfigSave.CreateBlk(ptr, 0x160000, 4, BLK_RW_ANY);
 		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
-		if(res != CFG_ALREADY_EXISTS) 
+		if(res != CFG_ALREADY_EXISTS)
 			*reinterpret_cast<u32*>(ptr) = 0;
 
 		res = ConfigSave.CreateBlk(ptr, 0x170000, 4, BLK_RW_ANY);
 		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
-		if(res != CFG_ALREADY_EXISTS) 
+		if(res != CFG_ALREADY_EXISTS)
 			*reinterpret_cast<u32*>(ptr) = 0;
 
 		res = ConfigSave.CreateBlk(ptr, 0x40004, sizeof(CStick_T), BLK_RW_SYSTEM);
 		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
-		if(res != CFG_ALREADY_EXISTS) 
+		if(res != CFG_ALREADY_EXISTS)
 			Hwcal_GetCStickNoCheck(hwcal, ptr);
 
 		res = ConfigSave.CreateBlk(ptr, 0x50008, sizeof(HWCALLcdPowerSaveExtraData_T), BLK_RW_SYSTEM);
 		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
-		if(res != CFG_ALREADY_EXISTS) 
+		if(res != CFG_ALREADY_EXISTS)
 			hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_LCDPOWERSAVEEXTRA, nullptr, 15);
 
 		res = ConfigSave.CreateBlk(ptr, 0x50007, sizeof(HWCALPitData_T), BLK_RW_SYSTEM);
 		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
-		if(res != CFG_ALREADY_EXISTS) 
+		if(res != CFG_ALREADY_EXISTS)
 			hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_PIT, &DefaultPit, 16);
 
 		res = ConfigSave.CreateBlk(ptr, 0x180000, 4, BLK_RW_SYSTEM);
 		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
-		if(res != CFG_ALREADY_EXISTS) 
+		if(res != CFG_ALREADY_EXISTS)
 			*reinterpret_cast<u32*>(ptr) = 0;
 
 		res = ConfigSave.CreateBlk(ptr, 0x50009, 8, BLK_RW_SYSTEM);
 		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
-		if(res != CFG_ALREADY_EXISTS) 
-		{
+		if(res != CFG_ALREADY_EXISTS) {
 			reinterpret_cast<float*>(ptr)[0] = 1.0; // 0x3F800000
 			reinterpret_cast<u32*>(ptr)[1]   = 0x100;
 		}
 
 		res = ConfigSave.CreateBlk(ptr, 0x180001, sizeof(HWCALQtmData_T), BLK_RW_SYSTEM);
 		if(R_FAILED(res) && res != CFG_ALREADY_EXISTS) return res;
-		if(res != CFG_ALREADY_EXISTS) 
+		if(res != CFG_ALREADY_EXISTS)
 			hwcal.ReadCalIndexWithDefault(ptr, CAL_INDEX_QTM, &DefaultQtm, 18);
 
 		// after this point, cfg would check for version < 50 *again*

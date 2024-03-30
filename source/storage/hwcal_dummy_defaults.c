@@ -249,9 +249,9 @@ const HWCALQtmData_T DummyQtm = (HWCALQtmData_T){
 	.OptimalDistance = 301.0f, // 0x43968000
 };
 
-// Why? Used on formatting save
+// Why? Used on formatting save or load defaults
 const HWCALQtmData_T DefaultQtm = (HWCALQtmData_T){
-	.DivisorAtZero = 6.5f, // 0x40D00000
+	.DivisorAtZero = 4.5f, // 0x40900000
 	.TranslationX = 0.0f, // 0x0
 	.TranslationY = 0.0f, // 0x0
 	.RotationZ = 0.0f, // 0x0

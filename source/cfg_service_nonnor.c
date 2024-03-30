@@ -106,9 +106,10 @@ void CFG_Common_IPCSession(int service_index) {
 		break;
 	case 0x9:
 		cmdbuf[0] = IPC_MakeHeader(0x9, 2, 0);
-		cmdbuf[1] = CountryEnumToStr((CFG_CountryCode)cmdbuf[1], (char*)&cmdbuf[2]);
+		cmdbuf[1] = CountryEnumToStr((CFG_CountryCode)(cmdbuf[1] & 0xFF), (char*)&cmdbuf[2]);
 		break;
 	case 0xA:
+		cmdbuf[2] = 0;
 		cmdbuf[0] = IPC_MakeHeader(0xA, 2, 0);
 		cmdbuf[1] = CountryStrToEnum((const char*)&cmdbuf[1], (CFG_CountryCode*)&cmdbuf[2]);
 		break;
@@ -126,8 +127,9 @@ void CFG_Common_IPCSession(int service_index) {
 		} else {
 			void* ptr = (void*)cmdbuf[4];
 			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[3]);
+			u32 blkid = cmdbuf[2];
 
-			cmdbuf[1] = Cfg_System_ReadBlk(ptr, cmdbuf[2], size);
+			cmdbuf[1] = Cfg_System_ReadBlk(ptr, blkid, size);
 			cmdbuf[0] = IPC_MakeHeader(cmdid, 1, 2);
 			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_W);
 			cmdbuf[3] = (u32)ptr;
@@ -141,8 +143,9 @@ void CFG_Common_IPCSession(int service_index) {
 		} else {
 			void* ptr = (void*)cmdbuf[4];
 			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[3]);
+			u32 blkid = cmdbuf[1];
 
-			cmdbuf[1] = Cfg_System_WriteBlkWithPublish(ptr, cmdbuf[1], size);
+			cmdbuf[1] = Cfg_System_WriteBlkWithPublish(ptr, blkid, size);
 			cmdbuf[0] = IPC_MakeHeader(cmdid, 1, 2);
 			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_W);
 			cmdbuf[3] = (u32)ptr;
@@ -253,10 +256,10 @@ void CFG_Common_IPCSession(int service_index) {
 		} else {
 			const void* ptr = (const void*)cmdbuf[5];
 			size_t size = IPC_Get_Desc_Buffer_Size(cmdbuf[4]);
-			u32 blk_id = cmdbuf[1];
+			u32 blkid = cmdbuf[1];
 			CFG_BlkFlags flags = (CFG_BlkFlags)(cmdbuf[3] & 0xFFFF);
 
-			cmdbuf[1] = Cfg_CreateBlkWithData(ptr, blk_id, size, flags);
+			cmdbuf[1] = Cfg_CreateBlkWithData(ptr, blkid, size, flags);
 			cmdbuf[0] = IPC_MakeHeader(0x804, 1, 2);
 			cmdbuf[2] = IPC_Desc_Buffer(size, IPC_BUFFER_R);
 			cmdbuf[3] = (u32)ptr;
@@ -279,12 +282,12 @@ void CFG_Common_IPCSession(int service_index) {
 		cmdbuf[1] = 0;
 		break;
 	case 0x808:
-		cmdbuf[0] = IPC_MakeHeader(0x808, 1, 0);
 		cmdbuf[1] = Cfg_UpgradeSave();
+		cmdbuf[0] = IPC_MakeHeader(0x808, 1, 0);
 		break;
 	case 0x809:
 		{
-			Result res = Hwcal_ResetCirclePadCfgBlk();
+			Result res = Hwcal_ResetOuterCamsCfgBlk();
 
 			if(R_SUCCEEDED(res))
 				srvPublishToSubscriber(0x10B, 0);

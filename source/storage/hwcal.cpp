@@ -178,7 +178,7 @@ static bool CAL_COPY_CRCCHECK(void* dst, const void* src, bool cleanOnFail) {
 
 	if(!CheckHwcalChecksum<T>(*_src)) {
 		if(cleanOnFail)
-			memset(_dst, 0, sizeof(*_dst));
+			memset(_dst, 0, sizeof(*_dst)); // config would not originally clear buffer
 		return false;
 	}
 
@@ -589,7 +589,7 @@ bool ManagedHwcal_T::ReadIndex(int index) {
 void ManagedHwcal_T::Load() {
 	u8 hw = osWaitRunningHw();
 
-	SystemUsesEEP = hw == HW_KMC_DEBUGGER || hw == HW_KMC_CAPTURE || hw == HW_SNAKE_IS_DEBUGGER || hw == HW_SNAKE_IS_CAPTURE || hw == HW_SNAKE_IS_CAPTURE;
+	SystemUsesEEP = hw == HW_KMC_DEBUGGER || hw == HW_KMC_CAPTURE || hw == HW_SNAKE_IS_DEBUGGER || hw == HW_SNAKE_IS_CAPTURE || hw == HW_SNAKE_KMC_DEBUGGER;
 	SystemIsDev = osEnvInfoIsDev();
 
 	// would be faster to avoid a double read but also need more memory for that.
