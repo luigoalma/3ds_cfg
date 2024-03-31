@@ -16,7 +16,10 @@ static void hmacsha256_init(hmacsha256_t* ctx, const void* key, size_t keylen) {
 	uint32_t round0[16]; 
 
 	if(keylen > 64) {
-		sha256_full(key, keylen, &ctx->key[0]);
+		sha256_init(&ctx->sha256_ctx);
+		sha256_update(&ctx->sha256_ctx, key, keylen);
+		sha256_finish(&ctx->sha256_ctx);
+		sha256_hash(&ctx->sha256_ctx, &ctx->key[0]);
 		remainder = 32;
 	} else {
 		memcpy(&ctx->key[0], key, keylen);

@@ -3,6 +3,7 @@
 #include <3ds/types.h>
 #include <stddef.h>
 #include <assert.h>
+#include <assert_helpers.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,15 +22,15 @@ typedef struct {
 
 static_assert(sizeof(PS_RSA_Context) == 0x208, "Invalid PS_RSA_Context size compiled");
 static_assert(offsetof(PS_RSA_Context, mod) == 0);
-static_assert(sizeof(((PS_RSA_Context*)NULL)->mod) == 256);
+static_assert(sizeofmember(PS_RSA_Context, mod) == 256);
 static_assert(offsetof(PS_RSA_Context, small_exp) == 256);
-static_assert(sizeof(((PS_RSA_Context*)NULL)->small_exp) == 4);
+static_assert(sizeofmember(PS_RSA_Context, small_exp) == 4);
 static_assert(offsetof(PS_RSA_Context, exp) == 256);
-static_assert(sizeof(((PS_RSA_Context*)NULL)->exp) == 256);
+static_assert(sizeofmember(PS_RSA_Context, exp) == 256);
 static_assert(offsetof(PS_RSA_Context, rsa_bit_size) == 512);
-static_assert(sizeof(((PS_RSA_Context*)NULL)->rsa_bit_size) == 4);
+static_assert(sizeofmember(PS_RSA_Context, rsa_bit_size) == 4);
 static_assert(offsetof(PS_RSA_Context, is_full_exponent) == 516);
-static_assert(sizeof(((PS_RSA_Context*)NULL)->is_full_exponent) == 1);
+static_assert(sizeofmember(PS_RSA_Context, is_full_exponent) == 1);
 
 typedef enum {
 	CBC_Encrypt = 0,
@@ -40,10 +41,31 @@ typedef enum {
 	CCM_Decrypt = 5
 } PS_AES_AlgoTypes;
 
+/// Initializes PS.
 Result psInit(void);
+
+/// Exits PS.
 void psExit(void);
+
+/**
+ * @brief Verifies a RSA signature.
+ * @param hash SHA256 hash to compare with.
+ * @param ctx RSA context.
+ * @param signature RSA signature.
+ */
 Result PS_VerifyRsaSha256(u8 *hash, const PS_RSA_Context *ctx, u8 *signature);
+
+/**
+ * @brief Gets the 64-bit console friend code seed.
+ * @param seed Pointer to write the friend code seed to.
+ */
 Result PS_GetLocalFriendCodeSeed(u64* seed);
+
+/**
+ * @brief Generates cryptographically secure random bytes.
+ * @param out Pointer to the buffer to write the bytes to.
+ * @param len Number of bytes to write.
+ */
 Result PS_GenerateRandomBytes(void* out, size_t len);
 
 #ifdef __cplusplus

@@ -89,11 +89,13 @@ static void DeriveIds() {
 
 	union {
 		u64 v64[2];
-		u32 v32[4];
+		u16 v16[8];
 		u8 v8[16];
 	} twl_movable;
 
-	twl_movable.v32[0] = 0x005F5F5F; // endianness is fun.. in chars, ___\x00
+	// ___
+	twl_movable.v16[0] = 0x5F5F;
+	twl_movable.v8[2] = 0x5F;
 
 	if(R_SUCCEEDED(psInit())) {
 		PS_GenerateRandomBytes(&twl_movable.v8[3], 5);
