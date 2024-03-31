@@ -120,12 +120,14 @@ static void sha256_process512bitblock(sha256_t* ctx) {
 }
 
 void sha256_update(sha256_t* ctx, const void* ptr, size_t len) {
+	const uint8_t* _ptr = (const uint8_t*)ptr;
 	while(len) {
 		size_t off = ctx->MSize & (sizeof(ctx->M)-1);
 		size_t max = sizeof(ctx->M) - off;
 		size_t _len = len > max ? max : len;
-		memcpy(&ctx->M[off], ptr, _len);
+		memcpy(&ctx->M[off], _ptr, _len);
 		ctx->MSize += _len;
+		_ptr += _len;
 		len -= _len;
 		if(off + _len == 64) {
 			sha256_process512bitblock(ctx);

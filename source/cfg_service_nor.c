@@ -45,7 +45,7 @@ static Result NOR_Initialize(u8 nspiSet) {
 static Result NOR_SendWREN() {
 	ALIGN(4) char cmd[4];
 
-	*(u32*)cmd = 6;
+	*(u32*)cmd = 6; // fine for little endian to set this way
 	return SPI_SendCmdOnly(NORHandler.spiHandle, 1, &cmd[0], 1);
 }
 
@@ -53,7 +53,7 @@ static Result NOR_SendWREN() {
 static Result NOR_SendWRDI() {
 	ALIGN(4) char cmd[4];
 
-	*(u32*)cmd = 4;
+	*(u32*)cmd = 4; // fine for little endian to set this way
 	return SPI_SendCmdOnly(NORHandler.spiHandle, 1, &cmd[0], 1);
 }
 
@@ -61,7 +61,7 @@ static Result NOR_SendWRDI() {
 static Result NOR_DeepSleep() {
 	ALIGN(4) char cmd[4];
 
-	*(u32*)cmd = 0xB9;
+	*(u32*)cmd = 0xB9; // fine for little endian to set this way
 	return SPI_SendCmdOnly(NORHandler.spiHandle, 1, &cmd[0], 1);
 }
 
@@ -69,7 +69,7 @@ static Result NOR_DeepSleep() {
 static Result NOR_WakeDeepSleep() {
 	ALIGN(4) char cmd[4];
 
-	*(u32*)cmd = 0xAB;
+	*(u32*)cmd = 0xAB; // fine for little endian to set this way
 	return SPI_SendCmdOnly(NORHandler.spiHandle, 1, &cmd[0], 1);
 }
 
@@ -78,8 +78,8 @@ static Result NOR_GetRDIDChipID(u8* out) {
 	ALIGN(4) char cmd[4];
 	u8 data[2];
 
-	*(u32*)cmd = 0x9F;
-	Result res = SPI_SendCmdAndShortRead(NORHandler.spiHandle, 1, &cmd[0], 1, &data, sizeof(data));
+	*(u32*)cmd = 0x9F; // fine for little endian to set this way
+	Result res = SPI_SendCmdAndShortRead(NORHandler.spiHandle, 1, &cmd[0], 1, &data[0], sizeof(data));
 
 	out[0] = data[0];
 	out[1] = data[1];
@@ -91,7 +91,7 @@ static Result NOR_GetRDSR(u8* out) {
 	ALIGN(4) char cmd[4];
 	u8 data[1];
 
-	*(u32*)cmd = 5;
+	*(u32*)cmd = 5; // fine for little endian to set this way
 	Result res = SPI_SendCmdAndShortRead(NORHandler.spiHandle, 1, &cmd[0], 1, &data, sizeof(data));
 
 	out[0] = data[0];
@@ -168,7 +168,7 @@ static Result NOR_SingleWrite(u32 offset, const void* data, size_t dataLen) {
 	cmd[3] = offset & 0xFF;
 	Err_Panic(NOR_SendWREN()); // cfg doesnt originally check if it failed
 	NOR_WaitForWritable();
-	return SPI_SendCmdAndWrite(NORHandler.spiHandle, 1, &cmd[0], 4, data, dataLen);
+	return SPI_SendCmdAndWrite(NORHandler.spiHandle, 1, &cmd[0], 4, data, size);
 }
 
 static void NOR_Write(u32 offset, const void* data, size_t dataLen) {
@@ -275,6 +275,7 @@ void CFG_NOR_IPCSession() {
 		cmdbuf[0] = IPC_MakeHeader(0x8, 1, 0);
 		break;
 	case 0x9:
+		cmdbuf[2] = 0;
 		cmdbuf[1] = NOR_GetRDIDChipID((u8*)&cmdbuf[2]);
 		cmdbuf[0] = IPC_MakeHeader(0x9, 2, 0);
 		break;
@@ -299,6 +300,7 @@ void CFG_NOR_IPCSession() {
 		cmdbuf[1] = 0;
 		break;
 	case 0xE:
+		cmdbuf[2] = 0;
 		cmdbuf[1] = NOR_GetRDSR((u8*)&cmdbuf[2]);
 		cmdbuf[0] = IPC_MakeHeader(0xE, 2, 0);
 		break;

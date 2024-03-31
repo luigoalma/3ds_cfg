@@ -86,7 +86,6 @@ Result SPI_SendCmdOnly(Handle spiHandle, u8 deviceId, const void* cmd, size_t cm
 	return (Result)cmdbuf[1];
 }
 
-
 Result SPI_SendCmdAndRead(Handle spiHandle, u8 deviceId, const void* cmd, size_t cmdLen, void* data, size_t dataLen) {
 	Result res = 0;
 	u32 *cmdbuf = getThreadCommandBuffer();
