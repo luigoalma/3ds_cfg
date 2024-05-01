@@ -49,7 +49,6 @@ AccessControlInfo:
     # none needed
 
   SystemCallAccess:
-    # need review
     ExitProcess: 3
     SleepThread: 10
     CloseHandle: 35
