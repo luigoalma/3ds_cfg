@@ -106,7 +106,7 @@ void CFG_Common_IPCSession(int service_index) {
 		break;
 	case 0x9:
 		cmdbuf[0] = IPC_MakeHeader(0x9, 2, 0);
-		cmdbuf[1] = CountryEnumToStr((CFG_CountryCode)(cmdbuf[1] & 0xFF), (char*)&cmdbuf[2]);
+		cmdbuf[1] = CountryEnumToStr((CFG_CountryCode)(cmdbuf[1] & 0xFFFF), (char*)&cmdbuf[2]);
 		break;
 	case 0xA:
 		cmdbuf[2] = 0;

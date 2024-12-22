@@ -338,7 +338,7 @@ Result CountryStrToEnum(const char* str, CFG_CountryCode* code) {
 		return CFG_NOT_FOUND;
 	}
 	IsoStr _str = (IsoStr){.str = {str[0], str[1]}};
-	for(int i = 0; i < 187; ++i) {
+	for(int i = 0; i <= CFG_COUNTRY_MAX; ++i) {
 		if(CountryIsoStringTable[i].str16 == _str.str16) {
 			*code = i;
 			return 0;
@@ -355,18 +355,9 @@ Result CountryEnumToStr(CFG_CountryCode code, char* str) {
 		str[2] = 0;
 		return CFG_NOT_FOUND;
 	}
-	IsoStr _str = (IsoStr){.str16 = code};
-	for(int i = 0; i < 187; ++i) {
-		const IsoStr* ptr = &CountryIsoStringTable[i];
-		if(ptr->str16 == _str.str16) {
-			str[0] = ptr->str[0];
-			str[1] = ptr->str[1];
-			str[2] = 0;
-			return 0;
-		}
-	}
-	str[0] = 0;
-	str[1] = 0;
+	const IsoStr* _str = &CountryIsoStringTable[code];
+	str[0] = _str->str[0];
+	str[1] = _str->str[1];
 	str[2] = 0;
-	return CFG_NOT_FOUND;
+	return (_str->str[0] == 0 || _str->str[1] == 0) ? CFG_NOT_FOUND : 0;
 }
