@@ -55,7 +55,7 @@ static void DeriveIds() {
 
 	transfer_id_base = *(u64*)ptr;
 
-	if(transfer_id_base & 0x3FFFFFFFFLL) { // LFCS id part
+	if(!(transfer_id_base & 0x3FFFFFFFFLL)) { // LFCS id part
 
 		if(R_FAILED(Lfcs_GetId(&transfer_id_base)))
 			return;
